@@ -130,7 +130,7 @@ void call_execve(char *cmd)
         i = execve(cmd, my_argv, my_envp);
         printf("errno is %d\n", errno);
         if(i < 0) {
-            printf("%s: %s\n", cmd, "command not found");
+            printf("%s: %s\n", cmd, "command not found"); //This is the error message being printed from 'echo'. The error spawns from the value of 'i', which is assigned by the function 'execve(cmd, my_argv, my_envp); -Andrew
             exit(1);        
         }
     } else {
@@ -148,7 +148,7 @@ void free_argv()
     }
 }
 
-int main(int argc, char *argv[], char *envp[])
+int main(int argc, char *argv[], char *envp[]) //envp is an array that stores the users environment variables. -Andrew
 {
     char c;
     int i, fd;
