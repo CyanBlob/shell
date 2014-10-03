@@ -53,14 +53,18 @@ void fill_argv(char *tmp_argv)
     strncat(my_argv[index], "\0", 1);
 }
 
-void copy_envp(char **envp)
+void copy_envp(char **envp) //Experimentally, **my_envp and **envp are exactly the same, and neither one stores user variables, only system variables. -Andrew
 {
     int index = 0;
     for(;envp[index] != NULL; index++) {
         my_envp[index] = (char *)
 		malloc(sizeof(char) * (strlen(envp[index]) + 1));
         memcpy(my_envp[index], envp[index], strlen(envp[index]));
+	//printf("ENVP: %s\n", envp[index]);
+	//printf("MYVP: %s\n", my_envp[index]); 
+
     }
+    //sleep(200);
 }
 
 void get_path_string(char **tmp_envp, char *bin_path)
