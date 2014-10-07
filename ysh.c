@@ -193,6 +193,8 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
     printf("[MY_SHELL ] ");
     fflush(stdout);
 
+
+    //In order to get redirection working, we need to look at the dup2 system call -Andrew
     while(c != EOF) {
         c = getchar();
         switch(c) {
@@ -200,7 +202,8 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
                        printf("[MY_SHELL ] ");
                    } else {
                        fill_argv(tmp);
-                       strncpy(cmd, my_argv[0], strlen(my_argv[0]));
+		       strncpy(cmd, my_argv[0], strlen(my_argv[0]));
+		       printf("CMD: %s\n", cmd);
                        strncat(cmd, "\0", 1);
                        if(index(cmd, '/') == NULL) {
                            if(attach_path(cmd) == 0) {
