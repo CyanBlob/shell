@@ -16,9 +16,12 @@ typedef void (*sighandler_t)(int);
 static char *my_argv[100], *my_envp[100];
 static char *search_path[10];
 
+// when a terminal interrupt signal is received... - Gary
 void handle_signal(int signo)
 {
+    // ... print the prompt - Gary
     printf("\n[MY_SHELL ] ");
+    // ... flush standard output - Gary: I think stdout is unbuffered by default, so this is unneccessary
     fflush(stdout);
 }
 
@@ -67,6 +70,7 @@ void copy_envp(char **envp) //Experimentally, **my_envp and **envp are exactly t
     //sleep(200);
 }
 
+// gets the envp that contains PATH and copies it to bin_path - Gary: could just return a pointer to the envp
 void get_path_string(char **tmp_envp, char *bin_path)
 {
     int count = 0;
@@ -82,25 +86,30 @@ void get_path_string(char **tmp_envp, char *bin_path)
         strncpy(bin_path, tmp, strlen(tmp));
 }
 
+// extracts individual paths from path_str and puts them in search_path[] - Gary
 void insert_path_str_to_search(char *path_str) 
 {
     int index=0;
     char *tmp = path_str;
     char ret[100];
 
+    // advances to the = in the path - Gary
     while(*tmp != '=')
         tmp++;
     tmp++;
 
+    // continue to the null terminator of the path string - Gary
     while(*tmp != '\0') {
+    	// path is : delimited; if a delimiter is found add a "/" and a "\0" to ret and add ret to search_path[] - Gary
         if(*tmp == ':') {
             strncat(ret, "/", 1);
             search_path[index] = 
 		(char *) malloc(sizeof(char) * (strlen(ret) + 1));
-            strncat(search_path[index], ret, strlen(ret));
+	    strncat(search_path[index], ret, strlen(ret));
             strncat(search_path[index], "\0", 1);
             index++;
             bzero(ret, 100);
+        // else append the tmp char to ret - Gary
         } else {
             strncat(ret, tmp, 1);
         }
@@ -161,12 +170,17 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
     char *path_str = (char *)malloc(sizeof(char) * 256);
     char *cmd = (char *)malloc(sizeof(char) * 100);
     
+    // ignore terminal interrupt signals - Gary: seems redundant given the next line
     signal(SIGINT, SIG_IGN);
+    // handle terminal interrupt signals with the function handle_signal - Gary
     signal(SIGINT, handle_signal);
 
+    // copies envp int my_envp - Gary: Why? Couldn't envp be used everywhere my_envp is used?
     copy_envp(envp);
 
-    get_path_string(my_envp, path_str);   
+    // copies the variable in envp that contains PATH to path_str - Gary
+    get_path_string(my_envp, path_str);
+    // extracts individual paths from path_str and adds them to the search_path[] array - Gary
     insert_path_str_to_search(path_str);
 
     if(fork() == 0) {
