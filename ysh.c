@@ -56,6 +56,7 @@ void fill_argv(char *tmp_argv)
     strncat(my_argv[index], "\0", 1);
 }
 
+// copies envp into my_envp - Gary
 void copy_envp(char **envp) //Experimentally, **my_envp and **envp are exactly the same, and neither one stores user variables, only system variables. -Andrew
 {
     int index = 0;
@@ -175,7 +176,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
     // handle terminal interrupt signals with the function handle_signal - Gary
     signal(SIGINT, handle_signal);
 
-    // copies envp int my_envp - Gary: Why? Couldn't envp be used everywhere my_envp is used?
+    // copies envp into my_envp - Gary: Why? Couldn't envp be used everywhere my_envp is used?
     copy_envp(envp);
 
     // copies the variable in envp that contains PATH to path_str - Gary
