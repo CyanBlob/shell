@@ -16,6 +16,8 @@ typedef void (*sighandler_t)(int);
 static char *my_argv[100], *my_envp[100];
 static char *search_path[10];
 
+int argv_index = 0;
+
 // when a terminal interrupt signal is received... - Gary
 void handle_signal(int signo)
 {
@@ -27,33 +29,35 @@ void handle_signal(int signo)
 
 void fill_argv(char *tmp_argv)
 {
+    argv_index = 0;
     char *foo = tmp_argv;
-    int index = 0;
+    //int index = 0;
     char ret[100];
     bzero(ret, 100);
     while(*foo != '\0') {
-        if(index == 10)
+        if(argv_index == 10)
             break;
 
         if(*foo == ' ') {
-            if(my_argv[index] == NULL)
-                my_argv[index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
+            if(my_argv[argv_index] == NULL)
+                my_argv[argv_index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
             else {
-                bzero(my_argv[index], strlen(my_argv[index]));
+                bzero(my_argv[argv_index], strlen(my_argv[argv_index]));
             }
-            strncpy(my_argv[index], ret, strlen(ret));
-            strncat(my_argv[index], "\0", 1);
+            strncpy(my_argv[argv_index], ret, strlen(ret));
+            strncat(my_argv[argv_index], "\0", 1);
             bzero(ret, 100);
-            index++;
+	    printf("ARGV_INDEX = %d\n", argv_index);
+            argv_index++;
         } else {
             strncat(ret, foo, 1);
         }
         foo++;
         /*printf("foo is %c\n", *foo);*/
     }
-    my_argv[index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
-    strncpy(my_argv[index], ret, strlen(ret));
-    strncat(my_argv[index], "\0", 1);
+    my_argv[argv_index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
+    strncpy(my_argv[argv_index], ret, strlen(ret));
+    strncat(my_argv[argv_index], "\0", 1);
 }
 
 // copies envp into my_envp - Gary
@@ -154,20 +158,29 @@ void call_execve(char *cmd)
 }
 
 
-//This new function will print the output of a command into the file "myfile.txt". Note that "myfile.txt" must exist beforehand. -Andrew
-void call_execve_dup2(char *cmd)
+//This new function will print the output of a command into the file specified after the '>>' string from user input -Andrew
+void call_execve_dup2(char *cmd, int d)
 {
     int i;
+    //filename gets set to 'my_argv[d+1], which is the next argument after 'ls' -Andrew
+    char *filename = my_argv[d + 1];
+
     printf("cmd is %s\n", cmd);
     if(fork() == 0) {
-	int file = open("myfile.txt", O_TRUNC | O_WRONLY);
+	
+	//Opens a file to be written to with name 'filename'. Clears existing data in file, and will create the file if it does not exist. Also sets read/write permissions -Andrew    
+	int file = open(filename, O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH);
+	
+	//Keeps track of 'stdout' so that we can go back to writing to the command line -Andrew
 	int old_stdout = dup(1);
+
+	//Starts writing output to the file -Andrew
 	dup2(file,1);
 	
-
-        //i = execve(cmd, my_argv, my_envp);
 	i = execvp(cmd, my_argv); //This fixed the 'echo' problem on my machine. execve(3) does not search for the command on the default PATH, but execvp does. I don't know if this will cause any problems down the line, as execvp(2) does not take the list of environment variables (my_envp) as an argument. -Andrew
-        dup2(old_stdout,1);
+        
+	//Resumes writing output to stdout -Andrew
+	dup2(old_stdout,1);
 
 
 	printf("errno is %d\n", errno);
@@ -224,6 +237,9 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 
     //In order to get redirection working, we need to look at the dup2 system call -Andrew
     while(c != EOF) {
+	int d = 0;
+	int t = 0;
+	char outputredirect[] = ">>";
         c = getchar();
         switch(c) {
             case '\n': if(tmp[0] == '\0') {
@@ -235,7 +251,22 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
                        strncat(cmd, "\0", 1);
                        if(index(cmd, '/') == NULL) {
                            if(attach_path(cmd) == 0) {
-                               call_execve(cmd);
+				   for (d = 0; d < argv_index; d++)
+			           {
+					   printf("argc = %d\n", argc);
+				      if(strcmp(my_argv[d], outputredirect) == 0)
+				      {
+			 	          t = 1;
+			  	          break;
+			              }
+				   }
+
+			       if(t == 0)
+                                   call_execve(cmd);
+			       else if (t == 1)
+				   call_execve_dup2(cmd, d);
+			       t = 0;
+			       //printf("d = %d\n",d);
                            } else {
                                printf("%s: command not found\n", cmd);
                            }

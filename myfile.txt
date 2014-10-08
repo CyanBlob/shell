@@ -1,4 +1,0 @@
-a.out
-myfile.txt
-README.md
-ysh.c
