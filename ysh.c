@@ -225,12 +225,17 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
     // extracts individual paths from path_str and adds them to the search_path[] array - Gary
     insert_path_str_to_search(path_str);
 
+    // fork into two processes and ... - Gary : This seems like a complicated way to clear the screen.
+    // ... in the child processes run clear and exit the child process - Gary
     if(fork() == 0) {
         execve("/usr/bin/clear", argv, my_envp);
         exit(1);
+    // ... in the parent process wait for the child to exit - Gary
     } else {
         wait(NULL);
     }
+    
+    // print the my_shell prompt and unnecessarily flush stdout... again - Gary
     printf("[MY_SHELL ] ");
     fflush(stdout);
 
