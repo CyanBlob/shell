@@ -166,50 +166,49 @@ void call_execve_dup2(char *cmd, int k)
     char *filename = my_argv[k + 1];
     printf("%s\n", filename);
 
+
+    //Copies everything before the '<<' from my_argv[] into new_argv[] -Andrew
     for (k = 0; k <= argv_index; k++)
     {
 	    if(strcmp(my_argv[k], ">>") != 0)
 	    {
-		printf("Not found!\n");
-	    	//strcpy(new_argv[k],my_argv[k]);
-		//strcpy(new_argv[k],"cat");
 		new_argv[k] = my_argv[k];
-		printf("NEW_ARGV[%d] = %s\n", k, new_argv[k]);
-	        printf("MY_ARGV[%d] = %s\n", k, my_argv[k]);	
 	    }
 	    else if(strcmp(my_argv[k], ">>") == 0)
 	    {
-		printf(">> found!\n");
+		while( k < 100)
+		{
+			new_argv[k] = NULL;
+			k++;
+		}
 		break;
-		new_argv[k] = NULL;
-		//break;
-		k = argv_index;
 	    }
     } 
 
     printf("cmd is %s\n", cmd);
     if(fork() == 0) {
 
-	    printf("TEST 4\n");
-	
+
 	//Opens a file to be written to with name 'filename'. Clears existing data in file, and will create the file if it does not exist. Also sets read/write permissions -Andrew    
 	int file = open(filename, O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH);
 	
-	printf("TEST 3\n");
 	//Keeps track of 'stdout' so that we can go back to writing to the command line -Andrew
 	int old_stdout = dup(1);
 
-	printf("TEST 2\n");
+	int x = 0;
+	for (x = 0; x < 100; x++)
+
 	//Starts writing output to the file -Andrew
 	dup2(file,1);
 
-	printf("TEST 1\n");	
+
+	//This gets passed new_argv[] instead of my_argv[] so that we don't get the '<<' and the filename included in what gets executed by execvp() -Andrew
 	i = execvp(cmd, new_argv); //This fixed the 'echo' problem on my machine. execve(3) does not search for the command on the default PATH, but execvp does. I don't know if this will cause any problems down the line, as execvp(2) does not take the list of environment variables (my_envp) as an argument. -Andrew 
 	//Resumes writing output to stdout -Andrew
 	close(file);
 	dup2(old_stdout,1);
 
-	printf("%d\n", i);
+	//printf("%d\n", i);
 	printf("errno is %d\n", errno);
         if(i < 0) {
             printf("%s: %s\n", cmd, "command not found"); //This is the error message being printed from 'echo'. The error spawns from the value of 'i', which is assigned by the function 'execve(cmd, my_argv, my_envp); -Andrew
