@@ -27,14 +27,18 @@ void handle_signal(int signo)
     fflush(stdout);
 }
 
+// splits tmp_argv into arguments and stores them in my_argv - Gary
 void fill_argv(char *tmp_argv)
 {
     argv_index = 0;
+    // copying pointer tmp_argv to pointer foo - Gary: intentional obfuscation?
     char *foo = tmp_argv;
     //int index = 0;
     char ret[100];
     bzero(ret, 100);
+    // iterates through tmp_argv (foo) until null terminator - Gary
     while(*foo != '\0') {
+    	// arguments capped at 10 for some reason - Gary
         if(argv_index == 10)
             break;
 
@@ -121,15 +125,19 @@ void insert_path_str_to_search(char *path_str)
     }
 }
 
+// adds a path to cmd if it finds a valid path to cmd in search_path[] - Gary: appears to always return 0
 int attach_path(char *cmd)
 {
     char ret[100];
     int index;
     int fd;
     bzero(ret, 100);
+    // iterates through the paths in search_path[] - Gary
     for(index=0;search_path[index]!=NULL;index++) {
+    	// adds the cmd to each search_path - Gary
         strcpy(ret, search_path[index]);
         strncat(ret, cmd, strlen(cmd));
+        // attempts to open the cmd at the search path, if it finds one that works it adds the path to the cmd - Gary
         if((fd = open(ret, O_RDONLY)) > 0) {
             strncpy(cmd, ret, strlen(ret));
             close(fd);
@@ -267,20 +275,30 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 
 
     //In order to get redirection working, we need to look at the dup2 system call -Andrew
+    // c = getchar(); loops until c is EOF - Gary: EOF never happens
     while(c != EOF) {
 	int d = 0;
 	int t = 0;
 	char outputredirect[] = ">>";
         c = getchar();
+        // switch on character from getchar() - Gary
+        // adds every c to tmp until it gets to newline - Gary
         switch(c) {
+            // case: newline/enter - Gary: a massive switch statement with only one case in it
+            // if at the null terminator in temp, just reprint the my_shell prompt - Gary
             case '\n': if(tmp[0] == '\0') {
                        printf("[MY_SHELL ] ");
+                   // if not at null terminator in tmp then ...- Gary 
                    } else {
+                       // split tmp into arguments and store them in my_argv - Gary
                        fill_argv(tmp);
+                       // copy the first argv into cmd and print it - Gary
 		       strncpy(cmd, my_argv[0], strlen(my_argv[0]));
 		       printf("CMD: %s\n", cmd);
                        strncat(cmd, "\0", 1);
+                       // if there are no forwards slashes in the cmd ... - Gary
                        if(index(cmd, '/') == NULL) {
+                       	   // adds a path to cmd if a valid one is found in search_paths[] - Gary: attach_path always == 0
                            if(attach_path(cmd) == 0) {
 				   for (d = 0; d < argv_index; d++)
 			           {
@@ -300,6 +318,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
                            } else {
                                printf("%s: command not found\n", cmd);
                            }
+                       // if there was a forward slash in the cmd ... - Gary
                        } else {
                            if((fd = open(cmd, O_RDONLY)) > 0) {
                                close(fd);
@@ -314,6 +333,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
                    }
                    bzero(tmp, 100);
                    break;
+            // default case: concat c to tmp - Gary
             default: strncat(tmp, &c, 1);
                  break;
         }
