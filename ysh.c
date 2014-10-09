@@ -227,7 +227,7 @@ void call_execve_dup2(char *cmd, int k)
     }
 }
 
-
+// clears my_argv[] - Gary
 void free_argv()
 {
     int index;
@@ -300,6 +300,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
                        if(index(cmd, '/') == NULL) {
                        	   // adds a path to cmd if a valid one is found in search_paths[] - Gary: attach_path always == 0
                            if(attach_path(cmd) == 0) {
+                           	   // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found - Gary
 				   for (d = 0; d < argv_index; d++)
 			           {
 				      if(strcmp(my_argv[d], outputredirect) == 0)
@@ -308,29 +309,35 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 			  	          break;
 			              }
 				   }
-
+                               // if output redirect wasn't found - Gary
 			       if(t == 0)
                                    call_execve(cmd);
+                               // if output redirect was found - Gary
 			       else if (t == 1)
 				   call_execve_dup2(cmd, d);
 			       t = 0;
 			       //printf("d = %d\n",d);
+			   // if attach_path is not equal to 0 - Gary: attach_path is always 0
                            } else {
                                printf("%s: command not found\n", cmd);
                            }
                        // if there was a forward slash in the cmd ... - Gary
                        } else {
+                       	   // try and open the cmd and if successful exec it - Gary
                            if((fd = open(cmd, O_RDONLY)) > 0) {
                                close(fd);
                                call_execve(cmd);
+                           // if you can't open it then command not found, print error - Gary
                            } else {
                                printf("%s: command not found\n", cmd);
                            }
                        }
+                       // clear my_argv[], reprint shell prompt, clear cmd - Gary
                        free_argv();
                        printf("[MY_SHELL ] ");
                        bzero(cmd, 100);
                    }
+                   // clear tmp - Gary
                    bzero(tmp, 100);
                    break;
             // default case: concat c to tmp - Gary
