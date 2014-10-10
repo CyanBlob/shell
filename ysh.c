@@ -147,19 +147,24 @@ int attach_path(char *cmd)
     return 0;
 }
 
+// executes the cmd with arguments in my_argv using execvp() - Gary
 void call_execve(char *cmd)
 {
     int i;
     printf("cmd is %s\n", cmd);
+    // forks and then executes; exec replaces the child processe of the shell with the executed command process - Gary
     if(fork() == 0) {
         //i = execve(cmd, my_argv, my_envp);
 	i = execvp(cmd, my_argv); //This fixed the 'echo' problem on my machine. execve(3) does not search for the command on the default PATH, but execvp does. I don't know if this will cause any problems down the line, as execvp(2) does not take the list of environment variables (my_envp) as an argument. -Andrew
+        // if execvp() is successful the following doesn't run because this process has been replaced - Gary
+        // if execvp() is unsuccessful then this process still exists and it prints an error (stored in errno automatically) - Gary
         printf("errno is %d\n", errno);
         if(i < 0) {
             printf("%s: %s\n", cmd, "command not found"); //This is the error message being printed from 'echo'. The error spawns from the value of 'i', which is assigned by the function 'execve(cmd, my_argv, my_envp); -Andrew
             exit(1);        
         }
     } else {
+    	// the parent waits for the child process to complete - Gary
         wait(NULL);
     }
 }
@@ -238,6 +243,7 @@ void free_argv()
     }
 }
 
+// main - Gary
 int main(int argc, char *argv[], char *envp[]) //envp is an array that stores the users environment variables. -Andrew
 {
     char c;
