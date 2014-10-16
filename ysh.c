@@ -166,14 +166,13 @@ void call_execve(char *cmd)
 
 
 //This new function will print the output of a command into the file specified after the '>>' string from user input -Andrew
-void call_execve_dup2(char *cmd, int k)
+void call_execve_outredirect(char *cmd, int k)
 {
     int i;
     char *new_argv[100]; 
     //filename gets set to 'my_argv[d+1], which is the next argument after 'ls' -Andrew
     char *filename = my_argv[k + 1];
     printf("%s\n", filename);
-
 
     //Copies everything before the '<<' from my_argv[] into new_argv[] -Andrew
     for (k = 0; k <= argv_index; k++)
@@ -226,6 +225,75 @@ void call_execve_dup2(char *cmd, int k)
         wait(NULL);
     }
 }
+
+void call_execve_inredirect(char *cmd, int k)
+{
+    int i;
+    char c;
+    char oneword[100];
+    char *new_argv[100];
+    FILE *file;
+    int BUFSIZE = 100;
+    //filename gets set to 'my_argv[d+1], which is the next argument after 'ls' -Andrew
+    char *filename = my_argv[k + 1];
+    printf("%s\n", filename);
+
+    //Copies everything after the '>>' from my_argv[] into new_argv[] -Andrew
+    for (k = 0; k <= argv_index; k++)
+    {
+	    if(strcmp(my_argv[k], "<<") != 0)
+	    {
+		new_argv[k] = my_argv[k];
+	    }
+	    else if(strcmp(my_argv[k], "<<") == 0)
+	    {
+
+		file = fopen(filename, "r");
+
+		/*do
+		{
+		    c = fscanf(file, "%s" , oneword);
+		    new_argv[k] = oneword;
+		    //strcpy(new_argv[k],oneword);
+		    printf("%s %s %d\n",oneword, new_argv[k], k);
+		    k++;
+		} while (c != EOF);*/
+
+		new_argv[k] = malloc(BUFSIZE);
+		while (fgets(new_argv[k], BUFSIZE, file)) 
+		{
+		        k++;
+		        new_argv[k] = malloc(BUFSIZE);
+		}
+	
+		fclose(file);
+
+		while( k < 100)
+		{
+			new_argv[k] = NULL;
+			k++;
+		}
+		break;
+	    }
+    } 
+
+    printf("cmd is %s\n", cmd);
+    if(fork() == 0) {
+
+	//This gets passed new_argv[] instead of my_argv[] so that we don't get the '<<' and the filename included in what gets executed by execvp() -Andrew
+	    
+	i = execvp(cmd, new_argv); //This fixed the 'echo' problem on my machine. execve(3) does not search for the command on the default PATH, but execvp does. I don't know if this will cause any problems down the line, as execvp(2) does not take the list of environment variables (my_envp) as an argument. -Andrew 
+
+	printf("errno is %d\n", errno);
+        if(i < 0) {
+            printf("%s: %s\n", cmd, "command not found"); //This is the error message being printed from 'echo'. The error spawns from the value of 'i', which is assigned by the function 'execve(cmd, my_argv, my_envp); -Andrew
+            exit(1);        
+        }
+    } else {
+        wait(NULL);
+    }
+}
+
 
 // clears my_argv[] - Gary
 void free_argv()
@@ -280,6 +348,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 	int d = 0;
 	int t = 0;
 	char outputredirect[] = ">>";
+	char inputredirect[] = "<<";
         c = getchar();
         // switch on character from getchar() - Gary
         // adds every c to tmp until it gets to newline - Gary
@@ -308,13 +377,21 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 			 	          t = 1;
 			  	          break;
 			              }
+				      else if(strcmp(my_argv[d], inputredirect) == 0)
+				      {
+				          t = 2;
+					  break;
+				      }
+
 				   }
                                // if output redirect wasn't found - Gary
 			       if(t == 0)
                                    call_execve(cmd);
                                // if output redirect was found - Gary
 			       else if (t == 1)
-				   call_execve_dup2(cmd, d);
+				   call_execve_outredirect(cmd, d);
+			       else if (t == 2)
+			           call_execve_inredirect(cmd, d);
 			       t = 0;
 			       //printf("d = %d\n",d);
 			   // if attach_path is not equal to 0 - Gary: attach_path is always 0
