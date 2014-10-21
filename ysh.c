@@ -13,8 +13,10 @@
 extern int errno;
 
 typedef void (*sighandler_t)(int);
-static char *my_argv[100], *my_envp[100];
-static char *search_path[10];
+//static 
+char *my_argv[100], *my_envp[100];
+//static 
+char *search_path[10];
 
 int argv_index = 0;
 
@@ -231,7 +233,7 @@ void call_execve_outredirect(char *cmd, int k)
     }
 }
 
-void call_execve_inredirect(char *cmd, int k)
+void call_execve_inredirect(char *cmd, int k) //int k is the index where the redirection symbol was found -Andrew
 {
     int i;
     char c;
@@ -264,6 +266,7 @@ void call_execve_inredirect(char *cmd, int k)
 		    k++;
 		} while (c != EOF);*/
 
+		//Copies the contents of the input file to the end of new_argv[] -Andrew
 		new_argv[k] = malloc(BUFSIZE);
 		while (fgets(new_argv[k], BUFSIZE, file)) 
 		{
@@ -273,6 +276,7 @@ void call_execve_inredirect(char *cmd, int k)
 	
 		fclose(file);
 
+		//Sets the remainder of new_argv[] to NULL -Andrew
 		while( k < 100)
 		{
 			new_argv[k] = NULL;
