@@ -235,12 +235,13 @@ void call_execve_outredirect(char *cmd, int k)
 
 void call_execve_inredirect(char *cmd, int k) //int k is the index where the redirection symbol was found -Andrew
 {
-    int i;
+    int i = 0;
     char c;
     char oneword[100];
     char *new_argv[100];
     FILE *file;
     int BUFSIZE = 100;
+    char buffer[100];
     //filename gets set to 'my_argv[d+1], which is the next argument after 'ls' -Andrew
     char *filename = my_argv[k + 1];
     printf("%s\n", filename);
@@ -257,22 +258,46 @@ void call_execve_inredirect(char *cmd, int k) //int k is the index where the red
 
 		file = fopen(filename, "r");
 
+		printf("TEST1\n");	
+		while (fgets(buffer,100,file))
+		{
+
+			printf("%s", buffer);
+			printf("TEST2\n");
+			strcpy(new_argv[k],"This is a\0");
+
+			printf("TEST3\n");
+			printf("Line %d: %s",k,new_argv[k]);
+			k++;
+		}
+		getchar();
+
+
+
 		/*do
 		{
 		    c = fscanf(file, "%s" , oneword);
-		    new_argv[k] = oneword;
+		    buffer = oneword;
 		    //strcpy(new_argv[k],oneword);
-		    printf("%s %s %d\n",oneword, new_argv[k], k);
+		    printf("%s %s %d\n",oneword, buffer, k);
 		    k++;
 		} while (c != EOF);*/
 
 		//Copies the contents of the input file to the end of new_argv[] -Andrew
+		
+
+		/*
 		new_argv[k] = malloc(BUFSIZE);
+
 		while (fgets(new_argv[k], BUFSIZE, file)) 
 		{
 		        k++;
 		        new_argv[k] = malloc(BUFSIZE);
-		}
+			strcat(new_argv[k - 1], "");
+			printf("TEST\n");
+			printf("TEST: %d %s\n",k, new_argv[k - 1]);
+		} 
+		*/
 	
 		fclose(file);
 
@@ -292,6 +317,10 @@ void call_execve_inredirect(char *cmd, int k) //int k is the index where the red
 	//This gets passed new_argv[] instead of my_argv[] so that we don't get the '<<' and the filename included in what gets executed by execvp() -Andrew
 	    
 	i = execvp(cmd, new_argv); //This fixed the 'echo' problem on my machine. execve(3) does not search for the command on the default PATH, but execvp does. I don't know if this will cause any problems down the line, as execvp(2) does not take the list of environment variables (my_envp) as an argument. -Andrew 
+
+
+	for(k = 0; k < 100; k++)
+		free(new_argv[k]);
 
 	printf("errno is %d\n", errno);
         if(i < 0) {
