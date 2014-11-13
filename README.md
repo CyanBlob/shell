@@ -7,9 +7,13 @@ On a the CSE machines or your own Linux machine, run: git clone https://github.c
 
 To update the GitHub with your changes, run:
 
+
 git add filename
+
 git commit -m "Commit message"
+
 git push origin
+
 
 In order to pull the most recent version from the GitHub, run:
 
