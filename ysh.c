@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+
 extern int errno;
 
 typedef void (*sighandler_t)(int);
