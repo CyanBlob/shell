@@ -248,6 +248,8 @@ void call_execve_inredirect(char *cmd, int k) //int k is the index where the red
     printf("%s\n", filename);
 
     //Copies everything after the '>>' from my_argv[] into new_argv[] -Andrew
+    
+    file = fopen(filename, "r");
     for (k = 0; k <= argv_index; k++)
     {
 	    if(strcmp(my_argv[k], "<<") != 0)
@@ -257,8 +259,8 @@ void call_execve_inredirect(char *cmd, int k) //int k is the index where the red
 	    else if(strcmp(my_argv[k], "<<") == 0)
 	    {
 
-		file = fopen(filename, "r");
 
+		/*
 		printf("TEST1\n");	
 		while (fgets(buffer,100,file))
 		{
@@ -271,7 +273,7 @@ void call_execve_inredirect(char *cmd, int k) //int k is the index where the red
 			printf("Line %d: %s",k,new_argv[k]);
 			k++;
 		}
-		getchar();
+		getchar();*/
 
 
 
@@ -287,7 +289,7 @@ void call_execve_inredirect(char *cmd, int k) //int k is the index where the red
 		//Copies the contents of the input file to the end of new_argv[] -Andrew
 		
 
-		/*
+		
 		new_argv[k] = malloc(BUFSIZE);
 
 		while (fgets(new_argv[k], BUFSIZE, file)) 
@@ -298,9 +300,9 @@ void call_execve_inredirect(char *cmd, int k) //int k is the index where the red
 			printf("TEST\n");
 			printf("TEST: %d %s\n",k, new_argv[k - 1]);
 		} 
-		*/
+		
 	
-		fclose(file);
+		//fclose(file);
 
 		//Sets the remainder of new_argv[] to NULL -Andrew
 		while( k < 100)
