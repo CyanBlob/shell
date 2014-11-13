@@ -19,14 +19,22 @@ git pull origin
 Tasks:
 
 1) Echo - Fixed - Andrew
+
 2) Output redirection - Fixed - Andrew
+
 3) Input redirection - Fixed - Andrew (pushed it under the bed)
 
+
 4) Piping - Assigned to Kane
+
 5) Background Jobs - Assigned to Shashi
+
 6) SuperBash - Assigned to Gary
 
+
 7) 24 hour CPU usage - Up for grabs
+
 8) New Linux Utility - Up for grabs
+
 
 9) Extra utility (extra credit) - Anyone
