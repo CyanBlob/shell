@@ -28,15 +28,18 @@ Tasks:
 
 3) Input redirection - Fixed - Andrew (pushed it under the bed)
 
-
-4) Piping - Assigned to Kane
-
-5) Background Jobs - Assigned to Shashi
-
-6) SuperBash - Assigned to Gary
+4) 24 hour CPU usage - Fixed - Andrew
 
 
-7) 24 hour CPU usage - Up for grabs
+
+5) Piping - In progress - Assigned to Kane
+
+6) Background Jobs - Assigned to Shashi
+
+7) SuperBash - Assigned to Gary
+
+
+
 
 8) New Linux Utility - Up for grabs
 
