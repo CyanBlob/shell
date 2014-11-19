@@ -282,8 +282,8 @@ void pipe_process(char* cmd){
 			in1[k] = my_argv[k];			   //getting first part of pipe into input1
 		else{
 			in2[k]=my_argv[k];
-			if(k<argv_index)				  //getting second part of pipe into input2
-				break;
+			if(k<argv_index)			  //getting second part of pipe into input2
+				break;						//comment
 		}
 	}
 	pipe(fd); 
