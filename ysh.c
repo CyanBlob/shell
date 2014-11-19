@@ -234,6 +234,50 @@ void call_execve_outredirect(char *cmd, int k)
     }
 }
 
+//piping process -Kane
+//pipes the output of in1 into in2
+void pipe_process(char* cmd){
+	int fd[2];	//file descriptor
+	int k;
+	char *in1[100], *in2[100];
+	
+	for (k = 0; k <= argv_index; k++){
+		if(strcmp(my_argv[k], "|") !=0)
+			in1[k] = my_argv[k];			   //getting first part of pipe into input1
+		else{
+			in2[k]=my_argv[k];
+			if(k<argv_index)				  //getting second part of pipe into input2
+				break;
+		}
+	}
+	pipe(fd); 
+	// 1st child process
+	if (fork()==0){
+		//stdin to fd[0] end of pipe
+		dup2(fd[0], STDIN_FILENO);
+		close(fd[1]);
+		close(fd[2]);
+		//execute 2nd input
+		//2nd child process
+		if(fork()==0){
+			//stdout to fd[1] end of pipe
+			dup2(fd[1], STDOUT_FILENO);
+			close(fd[0]);
+			close(fd[1]);
+			//execute first input
+			execvp(in1[0], in1);
+		}
+		wait(NULL);
+		execvp(in2[0], in2);
+	}
+	close(fd[1]);
+	close(fd[0]);
+	wait(NULL);
+
+}
+
+
+
 void call_execve_inredirect(char *cmd, int k) //int k is the index where the redirection symbol was found -Andrew
 {
     int i = 0;
@@ -389,6 +433,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
     while(c != EOF) {
 	int d = 0;
 	int t = 0;
+	char piperedirect[]="|";
 	char outputredirect[] = ">>";
 	char inputredirect[] = "<<";
         c = getchar();
@@ -424,6 +469,10 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 				          t = 2;
 					  break;
 				      }
+					  else if(strcmp(my_argv[d], piperedirect) == 0){
+						  t = 3;
+						  break;
+					  }
 
 				   }
                                // if output redirect wasn't found - Gary
@@ -434,6 +483,9 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 				   call_execve_outredirect(cmd, d);
 			       else if (t == 2)
 			           call_execve_inredirect(cmd, d);
+				   else if (t == 3)
+					   pipe_process(cmd);
+					   
 			       t = 0;
 			       //printf("d = %d\n",d);
 			   // if attach_path is not equal to 0 - Gary: attach_path is always 0
