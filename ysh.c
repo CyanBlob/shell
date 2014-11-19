@@ -22,7 +22,7 @@ char *search_path[10];
 
 int argv_index = 0;
 
-int usage[96] = {-1};
+float usage[1440] = {-1};
 int counter = 0;
 FILE *cpufile;
 char cpu [5];
@@ -42,13 +42,18 @@ void get_cpu_usage()
 		
 		cpu_float = atof(cpu);
 
-		usage[counter % 96] = cpu_float;
+		usage[counter % 1440] = cpu_float;
 
-		for (x = 0; x <= counter % 96; x++)
+
+		//printf("usage[%d]
+		cpu_avg = 0; 
+		for (x = 0; x <= counter % 1440; x++)
 		{
 			cpu_avg = cpu_avg + usage[x];
+			//printf("%d, %2.2f\n", x, cpu_avg);
+			//sleep(5);
 		}		
-		cpu_avg = cpu_avg / ((counter % 96) + 1);
+		cpu_avg = cpu_avg / ((counter % 1440) + 1);
 
 		counter++;
 		sleep(60);
@@ -503,7 +508,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 					printf("my_argv[d] = %s\n", my_argv[d]);
 				      if(strcmp(my_argv[d], outputredirect) == 0)
 				      {
-			 	          printf("Found >>\n");
+			 	          //printf("Found >>\n");
 					  t = 1;
 			  	          break;
 			              }
@@ -518,7 +523,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 				      }
 				      else if(strcmp(my_argv[d], cpuredirect) == 0)
 				      {
-					  printf("Found ??\n");
+					  //printf("Found ??\n");
 					  t = 4;
 					  break;
 				      }
