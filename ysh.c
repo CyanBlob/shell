@@ -9,7 +9,8 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
+#include <pthread.h>
+#include <unistd.h>
 
 extern int errno;
 
@@ -20,6 +21,41 @@ char *my_argv[100], *my_envp[100];
 char *search_path[10];
 
 int argv_index = 0;
+
+int usage[96] = {-1};
+int counter = 0;
+FILE *cpufile;
+char cpu [5];
+float cpu_float;
+float cpu_avg = 0;
+
+void get_cpu_usage()
+{
+	int x;
+	while(1 == 1)
+	{
+		cpufile = fopen("/proc/loadavg", "r");
+		fscanf(cpufile, "%s%*[^\n]", cpu);
+
+		
+		fclose(cpufile);		
+		
+		cpu_float = atof(cpu);
+
+		usage[counter % 96] = cpu_float;
+
+		for (x = 0; x <= counter % 96; x++)
+		{
+			cpu_avg = cpu_avg + usage[x];
+		}		
+		cpu_avg = cpu_avg / ((counter % 96) + 1);
+
+		counter++;
+		sleep(60);
+	}
+
+}
+
 
 // when a terminal interrupt signal is received... - Gary
 void handle_signal(int signo)
@@ -399,6 +435,9 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
     char *tmp = (char *)malloc(sizeof(char) * 100);
     char *path_str = (char *)malloc(sizeof(char) * 256);
     char *cmd = (char *)malloc(sizeof(char) * 100);
+
+    pthread_t xtid;
+    pthread_create(&xtid, NULL, (void* (*) (void*)) get_cpu_usage, NULL);
     
     // ignore terminal interrupt signals - Gary: seems redundant given the next line
     signal(SIGINT, SIG_IGN);
@@ -433,6 +472,8 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
     while(c != EOF) {
 	int d = 0;
 	int t = 0;
+	
+	char cpuredirect[] = "cpu";
 	char piperedirect[]="|";
 	char outputredirect[] = ">>";
 	char inputredirect[] = "<<";
@@ -457,11 +498,13 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
                        	   // adds a path to cmd if a valid one is found in search_paths[] - Gary: attach_path always == 0
                            if(attach_path(cmd) == 0) {
                            	   // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found - Gary
-				   for (d = 0; d < argv_index; d++)
+				   for (d = 0; d <= argv_index; d++)
 			           {
+					printf("my_argv[d] = %s\n", my_argv[d]);
 				      if(strcmp(my_argv[d], outputredirect) == 0)
 				      {
-			 	          t = 1;
+			 	          printf("Found >>\n");
+					  t = 1;
 			  	          break;
 			              }
 				      else if(strcmp(my_argv[d], inputredirect) == 0)
@@ -469,10 +512,16 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 				          t = 2;
 					  break;
 				      }
-					  else if(strcmp(my_argv[d], piperedirect) == 0){
-						  t = 3;
-						  break;
-					  }
+				      else if(strcmp(my_argv[d], piperedirect) == 0){
+					  t = 3;
+					  break;
+				      }
+				      else if(strcmp(my_argv[d], cpuredirect) == 0)
+				      {
+					  printf("Found ??\n");
+					  t = 4;
+					  break;
+				      }
 
 				   }
                                // if output redirect wasn't found - Gary
@@ -483,8 +532,10 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 				   call_execve_outredirect(cmd, d);
 			       else if (t == 2)
 			           call_execve_inredirect(cmd, d);
-				   else if (t == 3)
-					   pipe_process(cmd);
+			       else if (t == 3)
+			           pipe_process(cmd);
+			       else if ( t == 4)
+				   printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
 					   
 			       t = 0;
 			       //printf("d = %d\n",d);
