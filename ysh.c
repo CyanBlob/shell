@@ -52,8 +52,11 @@ void get_cpu_usage()
 			cpu_avg = cpu_avg + usage[x];
 			//printf("%d, %2.2f\n", x, cpu_avg);
 			//sleep(5);
-		}		
-		cpu_avg = cpu_avg / ((counter % 1440) + 1);
+		}
+		if (counter < 1440)		
+			cpu_avg = cpu_avg / ((counter % 1440) + 1);
+		else 
+			cpu_avg = (cpu_avg / 1440);
 
 		counter++;
 		sleep(60);
