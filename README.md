@@ -2,6 +2,17 @@ CSCE3600
 ========
 
 Git repository for CSCE3600 group 16
+========
+The `echo` issue has been resolved, and should work normally on (hopefully) all machines.
+
+In order to use input redirection, follow this format: "command << inputfile.txt"
+
+In order to use output redirection, follow this format: "command >> outputfile.txt"
+
+In order to view your 1-minute and 24-hour average CPU usage, type `cpu`. Note that the shell can only take averages over the duration that it has been running, ie. to view an accurate 24-hour usage, the shell must be running and collecting data for a full 24 hours. Otherwise, it will print the average from the time the shell was started.
+
+Piping, background jobs, and the superbash additions remain a work in progress, but should not require much more work. (They have not been implemented in the current build at all, as of the night of 11/25/14)
+------
 
 On a the CSE machines or your own Linux machine, run: git clone https://github.com/CyanBlob/shell.git to copy the Git directory onto your machine
 
