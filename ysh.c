@@ -320,7 +320,38 @@ void pipe_process(char* cmd){
 
 }
 
+// Background Process - Shashi
+// Create a background process that outputs CPU usage information for every 10 seconds
+void background_process()
+{
+    FILE *fp= NULL;
+    pid_t child_process_id = 0;
+    pid_t sid = 0;
+    
+    // create child process and check for failure
+    if ((chile_process_id = fork()) < 0)
+    {
+        printf("fork failed while creating background process!\n");
+        // Return failure in exit status
+        return;
+    }
+    //unmask the file mode
+    umask(0);
 
+    // set new session and if its parent process then exit out of this function.
+    // If its the background proces, then it will move on.
+    if((sid = setid()) < 0){return;}
+
+    fp = fopen ("Log.txt", "w+");
+    while (1)
+    {
+        //log CPU information for every 10 seconds.
+        sleep(10);
+        fprintf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
+        fflush(fp);
+    }
+    fclose(fp);
+}
 
 void call_execve_inredirect(char *cmd, int k) //int k is the index where the redirection symbol was found -Andrew
 {
@@ -446,6 +477,9 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 
     pthread_t xtid;
     pthread_create(&xtid, NULL, (void* (*) (void*)) get_cpu_usage, NULL);
+    
+    // start background process - shashi
+    background_process();
     
     // ignore terminal interrupt signals - Gary: seems redundant given the next line
     signal(SIGINT, SIG_IGN);
