@@ -380,6 +380,7 @@ void background_process(char* cmd, int k)
         printf("%s: %s\n", cmd, "command not found"); //This is the error message being printed from 'echo'. The error spawns from the value of 'i', which is assigned by the function 'execve(cmd, my_argv, my_envp); -Andrew
         exit(1);
     exit(0);
+    }
 }
 
 void call_execve_inredirect(char *cmd, int k) //int k is the index where the redirection symbol was found -Andrew
@@ -507,8 +508,6 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
     pthread_t xtid;
     pthread_create(&xtid, NULL, (void* (*) (void*)) get_cpu_usage, NULL);
     
-    // start background process - shashi
-    background_process();
     
     // ignore terminal interrupt signals - Gary: seems redundant given the next line
     signal(SIGINT, SIG_IGN);
