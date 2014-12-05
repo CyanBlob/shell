@@ -279,46 +279,42 @@ void call_execve_outredirect(char *cmd, int k)
 }
 
 //piping process -Kane
-//pipes the output of in1 into in2
-void pipe_process(char* cmd){
-	int fd[2];	//file descriptor
-	int k;
-	char *in1[100], *in2[100];
-	
-	for (k = 0; k <= argv_index; k++){
-		if(strcmp(my_argv[k], "|") !=0)
-			in1[k] = my_argv[k];			   //getting first part of pipe into input1
-		else{
-			in2[k]=my_argv[k];
-			if(k<argv_index)			  //getting second part of pipe into input2
-				break;						//comment
-		}
-	}
-	pipe(fd); 
-	// 1st child process
-	if (fork()==0){
-		//stdin to fd[0] end of pipe
-		dup2(fd[0], STDIN_FILENO);
-		close(fd[1]);
-		close(fd[2]);
-		//execute 2nd input
-		//2nd child process
-		if(fork()==0){
-			//stdout to fd[1] end of pipe
-			dup2(fd[1], STDOUT_FILENO);
-			close(fd[0]);
-			close(fd[1]);
-			//execute first input
-			execvp(in1[0], in1);
-		}
-		wait(NULL);
-		execvp(in2[0], in2);
-	}
-	close(fd[1]);
-	close(fd[0]);
-	wait(NULL);
+void pipe_process(char* cmd, int d){
+        char *arg1[100]={ NULL }, *arg2[100]={ NULL };
+	int i;
+	int arg_size;
+	for(i=0;i<=d-1;i++){
+		arg_size=strlen(my_argv[i]);
+		arg1[i]=malloc(arg_size*sizeof(char));
+                strcpy(arg1[i],my_argv[i]);
+        }
 
+
+	for(i=d+1;i<=argv_index;i++){
+		arg_size=strlen(my_argv[i]);
+		arg2[i-(d+1)]=malloc(arg_size*sizeof(char));
+                strcpy(arg2[i-(d+1)],my_argv[i]);
+        }
+
+        if (fork()==0){
+		int in1file = open("pipetest.txt", O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH);
+		dup2(in1file,1);
+		execvp(arg1[0], arg1);
+	}
+	else{
+		wait(NULL);
+	}
+
+	if(fork()==0){
+		int in1file = open("pipetest.txt", O_RDONLY );
+		dup2(in1file, 0);
+		execvp(arg2[0],arg2);
+	}
+	else{
+		wait(NULL);
+	}
 }
+
 
 // Background Process - Shashi
 // Create a background process that outputs CPU usage information for every 10 seconds
@@ -575,7 +571,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 			       else if (t == 2)
 			           call_execve_inredirect(cmd, d);
 			       else if (t == 3)
-			           pipe_process(cmd);
+			           pipe_process(cmd,d);
 			       else if ( t == 4)
 				   printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
 					   
