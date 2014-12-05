@@ -318,12 +318,37 @@ void pipe_process(char* cmd, int d){
 
 // Background Process - Shashi
 // Create a background process that outputs CPU usage information for every 10 seconds
-void background_process()
+// Background Process - Shashi
+void background_process(char* cmd, int k)
 {
-    FILE *fp= NULL;
+    
+    int i;
     pid_t child_process_id = 0;
     pid_t sid = 0;
-    
+    char *filename = my_argv[k + 1];
+    char *line[100];
+    int argv_size;
+
+    for (i=0;i<100;i++)
+    {
+        if(i < k){
+            argv_size = strlen(my_argv[i]);
+            line[i] = malloc(argv_size*sizeof(char));
+            strcpy(line[i], my_argv[i]);
+        }
+        else
+            line[i] = NULL;
+    }
+
+    if (filename  == NULL)
+    {
+        filename = "BackgroundLog.txt";
+    }
+
+
+    int file = open(filename, O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH); 
+    printf("cmd is %s\n", cmd);
+
     // create child process and check for failure
     if ((child_process_id = fork()) < 0)
     {
@@ -331,22 +356,27 @@ void background_process()
         // Return failure in exit status
         return;
     }
-    //unmask the file mode
-    umask(0);
-
-    // set new session and if its parent process then exit out of this function.
-    // If its the background proces, then it will move on.
+    else if (child_process_id > 0)
+    {
+        printf("process_id of background process %d \n", child_process_id);
+        // return success in exit status
+    }
+    //process id if the user wants to kill the background process
+    
+    //parent process exits
     if((sid = setsid()) < 0){return;}
 
-    fp = fopen ("Log.txt", "w+");
-    while (1)
-    {
-        //log CPU information for every 10 seconds.
-        sleep(10);
-        fprintf(fp, "Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
-        fflush(fp);
+
+    //output to file
+    dup2(file,1);
+    //execute the command
+    i = execvp(cmd, line);
+    printf("errno is %d\n", errno);
+    if(i < 0) {
+        printf("%s: %s\n", cmd, "command not found"); //This is the error message being printed from 'echo'. The error spawns from the value of 'i', which is assigned by the function 'execve(cmd, my_argv, my_envp); -Andrew
+        exit(1);
+    exit(0);
     }
-    fclose(fp);
 }
 
 void call_execve_inredirect(char *cmd, int k) //int k is the index where the redirection symbol was found -Andrew
@@ -474,8 +504,6 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
     pthread_t xtid;
     pthread_create(&xtid, NULL, (void* (*) (void*)) get_cpu_usage, NULL);
     
-    // start background process - shashi
-    background_process();
     
     // ignore terminal interrupt signals - Gary: seems redundant given the next line
     signal(SIGINT, SIG_IGN);
@@ -515,6 +543,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 	char piperedirect[]="|";
 	char outputredirect[] = ">>";
 	char inputredirect[] = "<<";
+    	char backgroundredirect[] = "&";
         c = getchar();
         // switch on character from getchar() - Gary
         // adds every c to tmp until it gets to newline - Gary
@@ -560,7 +589,12 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 					  t = 4;
 					  break;
 				      }
-
+				      else if(strcmp(my_argv[d], backgroundredirect) == 0)
+                      		      {
+                        		  t = 5;
+                        		  break;
+                		      }
+					
 				   }
                                // if output redirect wasn't found - Gary
 			       if(t == 0)
@@ -574,7 +608,9 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 			           pipe_process(cmd,d);
 			       else if ( t == 4)
 				   printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
-					   
+				else if( t == 5)
+                    		    background_process(cmd, d);	
+                    		    
 			       t = 0;
 			       //printf("d = %d\n",d);
 			   // if attach_path is not equal to 0 - Gary: attach_path is always 0
