@@ -13,6 +13,8 @@
 */
 
 #include <stdio.h>
+#include <string.h>
+
 typedef enum {false=0, true=1} bool;
 
 char fgetcurrc(FILE* file);
@@ -20,72 +22,61 @@ void fskipc(int n, FILE* file);
 bool fmatchs(char* str, FILE* file);
 
 int main(int argc, char* argv[]) {
- FILE* inFile = fopen(argv[1], "r");
- FILE* outFile = fopen(argv[2], "w");
- //FILE* outFile = stdout; //debug
+ char c = fgetc(stdin);
 
- char c;
-
- for (c = fgetc(inFile); c != EOF; c = fgetc(inFile)) {
+ while (c != EOF) {
   //trims spaces before and after '='
   if (c == ' ' || c == '=') {
    int spaces = 0;
-   for (c = fgetcurrc(inFile); c == ' '; c = fgetc(inFile)) spaces++;
+   for (; c == ' '; c = fgetc(stdin)) spaces++;
    if (c == '=') {
-    fputc('=', outFile);
-    for (c = fgetc(inFile); c == ' '; c = fgetc(inFile));
+    fputc('=', stdout);
+    for (c = fgetc(stdin); c == ' '; c = fgetc(stdin));
    }
-   else {
-    int i;
-    for (i = 0; i < spaces; i++) fputc(' ', outFile);
-   }
-   fskipc(-1, inFile);
+   else for (; spaces > 0; spaces--) fputc(' ', stdout);
   }
 
-  //puts newline after closing bracket
+  //puts newline after closing bracket if there isn't one there already
   else if (c == ']') {
-   fputs("]\n", outFile);
+   fputc(']', stdout);
+   c = fgetc(stdin);
+   if (c != '\n') fputc('\n', stdout);
   }
 
-  //replaces repeat with while loop
-  else if (fmatchs("repeat", inFile)) {
-   fputs("repeatIndex1=0\n\n", outFile);
-   fputs("while [ $repeatIndex1 -lt ", outFile);
-   for (c = fgetc(inFile); !fmatchs("times\n\n{", inFile); c = fgetc(inFile)) fputc(c, outFile);
-   fputs("]\n\ndo\n", outFile);
-   for (c = fgetc(inFile); !fmatchs("}", inFile); c = fgetc(inFile)) fputc(c, outFile);
-   fputs("repeatIndex1=$[$repeatIndex1+1]\n\ndone\n", outFile);
+  //replaces repeat with first part of while loop
+  else if (c == 'r') {
+   char s[] = "repeat ";
+   char b[8] = "r";
+   int i;
+   for (i = 0; b[i] == s[i]; i++) b[i+1] = fgetc(stdin);
+   c = b[i];
+   b[i] = '\0';
+   if (i == strlen(s)) fputs("repeatIndex1=0\n\nwhile [ $repeatIndex1 -lt ", stdout);
+   else fputs(b, stdout);
   }
 
-  else fputc(c, outFile);
- }
-
-}
-
-//gets current character
-char fgetcurrc (FILE* file) {
- fseek(file, -1, SEEK_CUR);
- return fgetc(file);
-}
-
-//skips n characters
-void fskipc (int n, FILE* file) {
- fseek(file, n, SEEK_CUR);
-}
-
-//matches and consumes string in file, returns true if successful
-bool fmatchs (char* str, FILE* file) {
- char c;
- int skip = 0;
- for (c = fgetcurrc(file); *str != '\0'; c = fgetc(file)) {
-  if (c == *str) {
-   str++;
-   skip--;
+  //replaces times with second part of while loop
+  else if (c == 't') {
+   const char s[] = "times\n\n{";
+   char b[9] = "t";
+   int i;
+   for (i = 0; b[i] == s[i]; i++) b[i+1] = fgetc(stdin);
+   c = b[i];
+   b[i] = '\0';
+   if (i == strlen(s)) fputs("]\n\ndo", stdout);
+   else fputs(b, stdout);
   }
+
+  //replaces closing bracket with third part of while loop
+  else if (c == '}') {
+   fputs("repeatIndex1=$[$repeatIndex1+1]\n\ndone", stdout);
+   c = fgetc(stdin);
+  }
+
+  //else just output the character
   else {
-   fskipc(skip, file);
-   return false;
+   fputc(c, stdout);
+   c = fgetc(stdin);
   }
  }
- return true;
 }
