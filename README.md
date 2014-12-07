@@ -11,6 +11,8 @@ In order to use output redirection, follow this format: "[command] > [file to ou
 
 In order to use piping, follow this format: "[command to pipe from] | [command to pipe to]"
 
+In order to use SuperBash, use the command "./SuperBash"
+
 In order to view your 1-minute and 24-hour average CPU usage, type `cpu`. Note that the shell can only take averages over the duration that it has been running, ie. to view an accurate 24-hour usage, the shell must be running and collecting data for a full 24 hours. Otherwise, it will print the average from the time the shell was started.
 
 Piping, background jobs, and the superbash additions remain a work in progress, but should not require much more work. (They have not been implemented in the current build at all, as of the night of 11/25/14)
