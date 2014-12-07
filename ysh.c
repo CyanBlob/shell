@@ -194,127 +194,54 @@ int attach_path(char *cmd)
     return 0;
 }
 
-// executes the cmd with arguments in my_argv using execvp() - Gary
-void call_execve(char *cmd)
-{
-    int i;
-    printf("cmd is %s\n", cmd);
-    // forks and then executes; exec replaces the child processe of the shell with the executed command process - Gary
-    if(fork() == 0) {
-        //i = execve(cmd, my_argv, my_envp);
-	i = execvp(cmd, my_argv); //This fixed the 'echo' problem on my machine. execve(3) does not search for the command on the default PATH, but execvp does. I don't know if this will cause any problems down the line, as execvp(2) does not take the list of environment variables (my_envp) as an argument. -Andrew
-        // if execvp() is successful the following doesn't run because this process has been replaced - Gary
-        // if execvp() is unsuccessful then this process still exists and it prints an error (stored in errno automatically) - Gary
-        printf("errno is %d\n", errno);
-        if(i < 0) {
-            printf("%s: %s\n", cmd, "command not found"); //This is the error message being printed from 'echo'. The error spawns from the value of 'i', which is assigned by the function 'execve(cmd, my_argv, my_envp); -Andrew
-            exit(1);        
-        }
-    } else {
-    	// the parent waits for the child process to complete - Gary
-        wait(NULL);
-    }
+// execute command in my_argv[0] - Gary
+void call_execvp() {
+ if(fork() == 0) {
+  execvp(my_argv[0], my_argv);
+  printf("command not found: %s\n", my_argv[0]);
+  exit(1);
+ }
+ else wait(0);
 }
 
-
-//This new function will print the output of a command into the file specified after the '>>' string from user input -Andrew
-void call_execve_outredirect(char *cmd, int k)
-{
-    int i;
-    char *new_argv[100]; 
-    //filename gets set to 'my_argv[d+1], which is the next argument after 'ls' -Andrew
-    char *filename = my_argv[k + 1];
-    printf("%s\n", filename);
-
-    //Copies everything before the '<<' from my_argv[] into new_argv[] -Andrew
-    for (k = 0; k <= argv_index; k++)
-    {
-	    if(strcmp(my_argv[k], ">>") != 0)
-	    {
-		new_argv[k] = my_argv[k];
-	    }
-	    else if(strcmp(my_argv[k], ">>") == 0)
-	    {
-		while( k < 100)
-		{
-			new_argv[k] = NULL;
-			k++;
-		}
-		break;
-	    }
-    } 
-
-    printf("cmd is %s\n", cmd);
-    if(fork() == 0) {
-
-
-	//Opens a file to be written to with name 'filename'. Clears existing data in file, and will create the file if it does not exist. Also sets read/write permissions -Andrew    
-	int file = open(filename, O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH);
-	
-	//Keeps track of 'stdout' so that we can go back to writing to the command line -Andrew
-	int old_stdout = dup(1);
-
-	int x = 0;
-	for (x = 0; x < 100; x++)
-
-	//Starts writing output to the file -Andrew
-	dup2(file,1);
-
-
-	//This gets passed new_argv[] instead of my_argv[] so that we don't get the '<<' and the filename included in what gets executed by execvp() -Andrew
-	i = execvp(cmd, new_argv); //This fixed the 'echo' problem on my machine. execve(3) does not search for the command on the default PATH, but execvp does. I don't know if this will cause any problems down the line, as execvp(2) does not take the list of environment variables (my_envp) as an argument. -Andrew 
-	//Resumes writing output to stdout -Andrew
-	close(file);
-	dup2(old_stdout,1);
-
-	//printf("%d\n", i);
-	printf("errno is %d\n", errno);
-        if(i < 0) {
-            printf("%s: %s\n", cmd, "command not found"); //This is the error message being printed from 'echo'. The error spawns from the value of 'i', which is assigned by the function 'execve(cmd, my_argv, my_envp); -Andrew
-            exit(1);        
-        }
-    } else {
-        wait(NULL);
-    }
+// output redirection - Gary
+void call_execvp_outredirect(int d) {
+ if (fork() == 0) {
+  my_argv[d] = NULL;
+  int file = open(my_argv[d+1], O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH);
+  int old_out = dup(1);
+  dup2(file, 1);
+  execvp(my_argv[0], my_argv);
+  dup2(old_out, 1);
+  printf("command not found: %s\n", my_argv[0]);
+  exit(1);
+ }
+ else wait(0);
 }
 
-//piping process -Kane
-void pipe_process(int d){
-        char *arg1[100]={ NULL }, *arg2[100]={ NULL };
-	int i;
-	int arg_size;
-	for(i=0;i<=d-1;i++){
-		arg_size=strlen(my_argv[i]);
-		arg1[i]=malloc(arg_size*sizeof(char));
-                strcpy(arg1[i],my_argv[i]);
-        }
+// piping process - Gary
+void call_execvp_pipe_process(int d) {
+ if(fork() == 0) {
+  my_argv[d] = NULL;
+  int file = open("pipebuffer.tmp", O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH);
+  int old_out = dup(1);
+  dup2(file, 1);
+  execvp(my_argv[0], my_argv);
+  dup2(old_out, 1);
+  printf("command not found: %s\n", my_argv[0]);
+  exit(1);
+ }
+ else wait(0);
 
-
-	for(i=d+1;i<=argv_index;i++){
-		arg_size=strlen(my_argv[i]);
-		arg2[i-(d+1)]=malloc(arg_size*sizeof(char));
-                strcpy(arg2[i-(d+1)],my_argv[i]);
-        }
-
-        if (fork()==0){
-		int in1file = open("pipetest.txt", O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH);
-		dup2(in1file,1);
-		execvp(arg1[0], arg1);
-	}
-	else{
-		wait(NULL);
-	}
-
-	if(fork()==0){
-		int in1file = open("pipetest.txt", O_RDONLY );
-		dup2(in1file, 0);
-		execvp(arg2[0],arg2);
-	}
-	else{
-		wait(NULL);
-	}
+ if (fork() == 0) {
+  int file = open("pipebuffer.tmp", O_RDONLY );
+  dup2(file, 0);
+  execvp(my_argv[d+1], &my_argv[d+1]);
+  printf("command not found: %s\n", my_argv[d+1]);
+  exit(1);
+ }
+ else wait(0);
 }
-
 
 // Background Process - Shashi
 // Create a background process that outputs CPU usage information for every 10 seconds
@@ -380,12 +307,14 @@ void background_process(char* cmd, int k)
 }
 
 // input redirection - Gary
-void call_execve_inredirect(int d) {
+void call_execvp_inredirect(int d) {
  if(fork() == 0) {
   int file = open(my_argv[d+1], O_RDONLY);
   dup2(file, 0);
   my_argv[d] = NULL;
   execvp(my_argv[0], my_argv);
+  printf("command not found: %s\n", my_argv[0]);
+  exit(1);
  }
  else wait(NULL);
 }
@@ -507,14 +436,14 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 				   }
                                // if output redirect wasn't found - Gary
 			       if(t == 0)
-                                   call_execve(cmd);
+                                   call_execvp();
                                // if output redirect was found - Gary
 			       else if (t == 1)
-				   call_execve_outredirect(cmd, d);
+				   call_execvp_outredirect(d);
 			       else if (t == 2)
-			           call_execve_inredirect(d);
+			           call_execvp_inredirect(d);
 			       else if (t == 3)
-			           pipe_process(d);
+			           call_execvp_pipe_process(d);
 			       else if ( t == 4)
 				   printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
 				else if( t == 5)
@@ -531,7 +460,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
                        	   // try and open the cmd and if successful exec it - Gary
                            if((fd = open(cmd, O_RDONLY)) > 0) {
                                close(fd);
-                               call_execve(cmd);
+                               call_execvp();
                            // if you can't open it then command not found, print error - Gary
                            } else {
                                printf("%s: command not found\n", cmd);
