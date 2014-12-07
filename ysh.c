@@ -449,7 +449,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 	int t = 0;
 	
 	char cpuredirect[] = "cpu";
-	char piperedirect[]="|";
+	char piperedirect[]= "|";
 	char outputredirect[] = ">";
 	char inputredirect[] = "<";
     	char backgroundredirect[] = "&";
@@ -470,7 +470,7 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 		       printf("CMD: %s\n", cmd);
                        strncat(cmd, "\0", 1);
                        // if there are no forwards slashes in the cmd ... - Gary
-                       if(index(cmd, '/') == NULL) {
+                       if(index(cmd, '/') == NULL || strcmp(cmd, "./SuperBash") == 0) {
                        	   // adds a path to cmd if a valid one is found in search_paths[] - Gary: attach_path always == 0
                            if(attach_path(cmd) == 0) {
                            	   // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found - Gary
