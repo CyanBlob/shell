@@ -279,7 +279,7 @@ void call_execve_outredirect(char *cmd, int k)
 }
 
 //piping process -Kane
-void pipe_process(char* cmd, int d){
+void pipe_process(int d){
         char *arg1[100]={ NULL }, *arg2[100]={ NULL };
 	int i;
 	int arg_size;
@@ -379,107 +379,16 @@ void background_process(char* cmd, int k)
     }
 }
 
-void call_execve_inredirect(char *cmd, int k) //int k is the index where the redirection symbol was found -Andrew
-{
-    int i = 0;
-    char c;
-    char oneword[100];
-    char *new_argv[100];
-    FILE *file;
-    int BUFSIZE = 100;
-    char buffer[100];
-    //filename gets set to 'my_argv[d+1], which is the next argument after 'ls' -Andrew
-    char *filename = my_argv[k + 1];
-    printf("%s\n", filename);
-
-    //Copies everything after the '>>' from my_argv[] into new_argv[] -Andrew
-    
-    file = fopen(filename, "r");
-    for (k = 0; k <= argv_index; k++)
-    {
-	    if(strcmp(my_argv[k], "<<") != 0)
-	    {
-		new_argv[k] = my_argv[k];
-	    }
-	    else if(strcmp(my_argv[k], "<<") == 0)
-	    {
-
-
-		/*
-		printf("TEST1\n");	
-		while (fgets(buffer,100,file))
-		{
-
-			printf("%s", buffer);
-			printf("TEST2\n");
-			strcpy(new_argv[k],"This is a\0");
-
-			printf("TEST3\n");
-			printf("Line %d: %s",k,new_argv[k]);
-			k++;
-		}
-		getchar();*/
-
-
-
-		/*do
-		{
-		    c = fscanf(file, "%s" , oneword);
-		    buffer = oneword;
-		    //strcpy(new_argv[k],oneword);
-		    printf("%s %s %d\n",oneword, buffer, k);
-		    k++;
-		} while (c != EOF);*/
-
-		//Copies the contents of the input file to the end of new_argv[] -Andrew
-		
-
-		
-		new_argv[k] = malloc(BUFSIZE);
-
-		while (fgets(new_argv[k], BUFSIZE, file)) 
-		{
-		        k++;
-		        new_argv[k] = malloc(BUFSIZE);
-			strcat(new_argv[k - 1], "");
-			printf("TEST\n");
-			printf("TEST: %d %s\n",k, new_argv[k - 1]);
-		} 
-		
-	
-		//fclose(file);
-
-		//Sets the remainder of new_argv[] to NULL -Andrew
-		while( k < 100)
-		{
-			new_argv[k] = NULL;
-			k++;
-		}
-		break;
-	    }
-    } 
-
-    printf("cmd is %s\n", cmd);
-    if(fork() == 0) {
-
-	//This gets passed new_argv[] instead of my_argv[] so that we don't get the '<<' and the filename included in what gets executed by execvp() -Andrew
-	    
-	i = execvp(cmd, new_argv); //This fixed the 'echo' problem on my machine. execve(3) does not search for the command on the default PATH, but execvp does. I don't know if this will cause any problems down the line, as execvp(2) does not take the list of environment variables (my_envp) as an argument. -Andrew 
-
-
-	for(k = 0; k < 100; k++)
-		free(new_argv[k]);
-
-	printf("errno is %d\n", errno);
-        if(i < 0) {
-            printf("%s: %s\n", cmd, "command not found"); //This is the error message being printed from 'echo'. The error spawns from the value of 'i', which is assigned by the function 'execve(cmd, my_argv, my_envp); -Andrew
-            exit(1);        
-        }
-    } else {
-        wait(NULL);
-    }
+// input redirection - Gary
+void call_execve_inredirect(int d) {
+ if(fork() == 0) {
+  int file = open(my_argv[d+1], O_RDONLY);
+  dup2(file, 0);
+  my_argv[d] = NULL;
+  execvp(my_argv[0], my_argv);
+ }
+ else wait(NULL);
 }
-
 
 // clears my_argv[] - Gary
 void free_argv()
@@ -541,8 +450,8 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 	
 	char cpuredirect[] = "cpu";
 	char piperedirect[]="|";
-	char outputredirect[] = ">>";
-	char inputredirect[] = "<<";
+	char outputredirect[] = ">";
+	char inputredirect[] = "<";
     	char backgroundredirect[] = "&";
         c = getchar();
         // switch on character from getchar() - Gary
@@ -603,9 +512,9 @@ int main(int argc, char *argv[], char *envp[]) //envp is an array that stores th
 			       else if (t == 1)
 				   call_execve_outredirect(cmd, d);
 			       else if (t == 2)
-			           call_execve_inredirect(cmd, d);
+			           call_execve_inredirect(d);
 			       else if (t == 3)
-			           pipe_process(cmd,d);
+			           pipe_process(d);
 			       else if ( t == 4)
 				   printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
 				else if( t == 5)
