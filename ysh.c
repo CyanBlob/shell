@@ -110,22 +110,6 @@ void fill_argv(char *tmp_argv)
     strncat(my_argv[argv_index], "\0", 1);
 }
 
-// gets the envp that contains PATH and copies it to bin_path - Gary: could just return a pointer to the envp
-void get_path_string(char **tmp_envp, char *bin_path)
-{
-    int count = 0;
-    char *tmp;
-    while(1) {
-        tmp = strstr(tmp_envp[count], "PATH");
-        if(tmp == NULL) {
-            count++;
-        } else {
-            break;
-        }
-    }
-        strncpy(bin_path, tmp, strlen(tmp));
-}
-
 // extracts individual paths from path_str and puts them in search_path[] - Gary
 void insert_path_str_to_search(char *path_str) 
 {
@@ -337,8 +321,11 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
   memcpy(my_envp[i], envp[i], strlen(envp[i]));
  }
 
-    // copies the variable in envp that contains PATH to path_str - Gary
-    get_path_string(my_envp, path_str);
+ // copies the variable in envp that contains PATH to path_str - Gary
+ char* tmp2;
+ for (i = 0; tmp2 == NULL; i++) tmp2 = strstr(my_envp[i], "PATH");
+ strncpy(path_str, tmp2, strlen(tmp2));
+
     // extracts individual paths from path_str and adds them to the search_path[] array - Gary
     insert_path_str_to_search(path_str);
 
