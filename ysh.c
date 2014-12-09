@@ -110,37 +110,6 @@ void fill_argv(char *tmp_argv)
     strncat(my_argv[argv_index], "\0", 1);
 }
 
-// extracts individual paths from path_str and puts them in search_path[] - Gary
-void insert_path_str_to_search(char *path_str) 
-{
-    int index=0;
-    char *tmp = path_str;
-    char ret[100];
-
-    // advances to the = in the path - Gary
-    while(*tmp != '=')
-        tmp++;
-    tmp++;
-
-    // continue to the null terminator of the path string - Gary
-    while(*tmp != '\0') {
-    	// path is : delimited; if a delimiter is found add a "/" and a "\0" to ret and add ret to search_path[] - Gary
-        if(*tmp == ':') {
-            strncat(ret, "/", 1);
-            search_path[index] = 
-		(char *) malloc(sizeof(char) * (strlen(ret) + 1));
-	    strncat(search_path[index], ret, strlen(ret));
-            strncat(search_path[index], "\0", 1);
-            index++;
-            bzero(ret, 100);
-        // else append the tmp char to ret - Gary
-        } else {
-            strncat(ret, tmp, 1);
-        }
-        tmp++;
-    }
-}
-
 // adds a path to cmd if it finds a valid path to cmd in search_path[] - Gary: appears to always return 0
 int attach_path(char *cmd)
 {
@@ -322,12 +291,27 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
  }
 
  // copies the variable in envp that contains PATH to path_str - Gary
- char* tmp2;
+ char* tmp2 = NULL;
  for (i = 0; tmp2 == NULL; i++) tmp2 = strstr(my_envp[i], "PATH");
  strncpy(path_str, tmp2, strlen(tmp2));
 
-    // extracts individual paths from path_str and adds them to the search_path[] array - Gary
-    insert_path_str_to_search(path_str);
+ // extracts individual paths from path_str and adds them to the search_path[] array - Gary
+ char ret[100];
+ char* tmp3 = path_str;
+ for (tmp3 = path_str; *tmp3 != '='; tmp3++);
+ tmp3++;
+ i = 0;
+ for (tmp3++; *tmp3 != '\0'; tmp3++) {
+  if (*tmp == ':') {
+   strncat(ret, "/", 1);
+   search_path[i] = (char*) malloc(sizeof(char) * (strlen(ret) + 1));
+   strncat(search_path[i], ret, strlen(ret));
+   strncat(search_path[i], "\0", 1);
+   i++;
+   bzero(ret, 100);
+  }
+  else strncat(ret, tmp3, 1);
+ }
 
     // fork into two processes and ... - Gary : This seems like a complicated way to clear the screen.
     // ... in the child processes run clear and exit the child process - Gary
