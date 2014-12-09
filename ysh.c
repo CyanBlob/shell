@@ -110,21 +110,6 @@ void fill_argv(char *tmp_argv)
     strncat(my_argv[argv_index], "\0", 1);
 }
 
-// copies envp into my_envp - Gary
-void copy_envp(char **envp) //Experimentally, **my_envp and **envp are exactly the same, and neither one stores user variables, only system variables. -Andrew
-{
-    int index = 0;
-    for(;envp[index] != NULL; index++) {
-        my_envp[index] = (char *)
-		malloc(sizeof(char) * (strlen(envp[index]) + 1));
-        memcpy(my_envp[index], envp[index], strlen(envp[index]));
-	//printf("ENVP: %s\n", envp[index]);
-	//printf("MYVP: %s\n", my_envp[index]); 
-
-    }
-    //sleep(200);
-}
-
 // gets the envp that contains PATH and copies it to bin_path - Gary: could just return a pointer to the envp
 void get_path_string(char **tmp_envp, char *bin_path)
 {
@@ -194,17 +179,30 @@ int attach_path(char *cmd)
     return 0;
 }
 
-// execute command in my_argv[0] - Gary
+// execute command in my_argv[0]
 void call_execvp() {
  if(fork() == 0) {
   execvp(my_argv[0], my_argv);
   printf("command not found: %s\n", my_argv[0]);
   exit(1);
  }
- else wait(0);
+ else wait(NULL);
 }
 
-// output redirection - Gary
+// input redirection
+void call_execvp_inredirect(int d) {
+ if(fork() == 0) {
+  int file = open(my_argv[d+1], O_RDONLY);
+  dup2(file, 0);
+  my_argv[d] = NULL;
+  execvp(my_argv[0], my_argv);
+  printf("command not found: %s\n", my_argv[0]);
+  exit(1);
+ }
+ else wait(NULL);
+}
+
+// output redirection
 void call_execvp_outredirect(int d) {
  if (fork() == 0) {
   my_argv[d] = NULL;
@@ -216,10 +214,10 @@ void call_execvp_outredirect(int d) {
   printf("command not found: %s\n", my_argv[0]);
   exit(1);
  }
- else wait(0);
+ else wait(NULL);
 }
 
-// piping process - Gary
+// piping process
 void call_execvp_pipe_process(int d) {
  if(fork() == 0) {
   my_argv[d] = NULL;
@@ -231,7 +229,7 @@ void call_execvp_pipe_process(int d) {
   printf("command not found: %s\n", my_argv[0]);
   exit(1);
  }
- else wait(0);
+ else wait(NULL);
 
  if (fork() == 0) {
   int file = open("pipebuffer.tmp", O_RDONLY );
@@ -240,7 +238,7 @@ void call_execvp_pipe_process(int d) {
   printf("command not found: %s\n", my_argv[d+1]);
   exit(1);
  }
- else wait(0);
+ else wait(NULL);
 }
 
 // Background Process - Shashi
@@ -306,19 +304,6 @@ void background_process(char* cmd, int k)
     }
 }
 
-// input redirection - Gary
-void call_execvp_inredirect(int d) {
- if(fork() == 0) {
-  int file = open(my_argv[d+1], O_RDONLY);
-  dup2(file, 0);
-  my_argv[d] = NULL;
-  execvp(my_argv[0], my_argv);
-  printf("command not found: %s\n", my_argv[0]);
-  exit(1);
- }
- else wait(NULL);
-}
-
 // clears my_argv[] - Gary
 void free_argv()
 {
@@ -331,25 +316,26 @@ void free_argv()
 }
 
 // main - Gary
-int main(int argc, char *argv[], char *envp[]) //envp is an array that stores the users environment variables. -Andrew
-{
-    char c;
-    int i, fd;
-    char *tmp = (char *)malloc(sizeof(char) * 100);
-    char *path_str = (char *)malloc(sizeof(char) * 256);
-    char *cmd = (char *)malloc(sizeof(char) * 100);
+int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores the users environment variables. -Andrew
+ char c;
+ int i, fd;
+ char *tmp = (char *)malloc(sizeof(char) * 100);
+ char *path_str = (char *)malloc(sizeof(char) * 256);
+ char *cmd = (char *)malloc(sizeof(char) * 100);
 
-    pthread_t xtid;
-    pthread_create(&xtid, NULL, (void* (*) (void*)) get_cpu_usage, NULL);
-    
-    
-    // ignore terminal interrupt signals - Gary: seems redundant given the next line
-    signal(SIGINT, SIG_IGN);
-    // handle terminal interrupt signals with the function handle_signal - Gary
-    signal(SIGINT, handle_signal);
+ pthread_t xtid;
+ pthread_create(&xtid, NULL, (void* (*) (void*)) get_cpu_usage, NULL);
 
-    // copies envp into my_envp - Gary: Why? Couldn't envp be used everywhere my_envp is used?
-    copy_envp(envp);
+ // ignore terminal interrupt signals - Gary: seems redundant given the next line
+ // handle terminal interrupt signals with the function handle_signal - Gary
+ signal(SIGINT, SIG_IGN);
+ signal(SIGINT, handle_signal);
+
+ // copies envp into my_envp - Gary: Why? Couldn't envp be used everywhere my_envp is used?
+ for (i = 0; envp[i] != NULL; i++) {
+  my_envp[i] = (char*) malloc(sizeof(char) * (strlen(envp[i]) + 1));
+  memcpy(my_envp[i], envp[i], strlen(envp[i]));
+ }
 
     // copies the variable in envp that contains PATH to path_str - Gary
     get_path_string(my_envp, path_str);
