@@ -55,7 +55,7 @@ void get_cpu_usage() {
 // when a terminal interrupt signal is received... - Gary
 void handle_signal(int signo) {
  // ... print the prompt - Gary
- printf("\n[MY_SHELL ] ");
+ printf("\nshell> ");
  // ... flush standard output - Gary: I think stdout is unbuffered by default, so this is unneccessary
  //fflush(stdout);
 }
@@ -296,7 +296,7 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
  else wait(NULL);
 
  // print the my_shell prompt
- printf("MY_SHELL> ");
+ printf("shell> ");
 
  //In order to get redirection working, we need to look at the dup2 system call -Andrew
  // c = getchar(); loops until c is EOF - Gary: EOF never happens
@@ -315,7 +315,7 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
    // case: newline/enter - Gary: a massive switch statement with only one case in it
    // if at the null terminator in temp, just reprint the my_shell prompt - Gary
    case '\n':
-    if(tmp[0] == '\0') printf("[MY_SHELL ] ");
+    if(tmp[0] == '\0') printf("shell> ");
     // if not at null terminator in tmp then ...- Gary
     else {
      // split tmp into arguments and store them in my_argv - Gary
@@ -331,6 +331,7 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
        // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found - Gary
        for (d = 0; d <= argv_index; d++) {
         printf("my_argv[d] = %s\n", my_argv[d]);
+
         /*
         if(strcmp(my_argv[d], "!!") == 0) {
          cmd = old_cmd;
@@ -340,30 +341,37 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
          }
         }
         */
+
         if(strcmp(my_argv[d], outputredirect) == 0) {
-         //printf("Found >>\n");
-         call_execvp_outredirect(d);
+         t = 1;
          break;
         }
         else if(strcmp(my_argv[d], inputredirect) == 0) {
-         call_execvp_inredirect(d);
+         t = 2;
          break;
         }
         else if(strcmp(my_argv[d], piperedirect) == 0) {
-         call_execvp_pipe_process(d);
+         t = 3;
          break;
         }
         else if(strcmp(my_argv[d], cpuredirect) == 0) {
-         //printf("Found ??\n");
-         printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
+         t = 4;
 	 break;
 	}
 	else if(strcmp(my_argv[d], backgroundredirect) == 0) {
-         background_process(cmd, d);;
+         t = 5;
          break;
         }
-        else call_execvp();
        }
+
+       if (t == 0) call_execvp();
+       else if (t == 1) call_execvp_outredirect(d);
+       else if (t == 2) call_execvp_inredirect(d);
+       else if (t == 3) call_execvp_pipe_process(d);
+       else if (t == 4) printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
+       else if (t == 5) background_process(cmd, d);
+       t = 0;
+
        /*
        old_cmd = cmd;
        old_argv_index = argv_index;
@@ -373,8 +381,8 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
        printf("Copied!\n");
        */
 
-       // if attach_path is not equal to 0 - Gary: attach_path is always 0
       }
+      // if attach_path is not equal to 0 - Gary: attach_path is always 0
       else printf("%s: command not found\n", cmd);
      }
      // if there was a forward slash in the cmd ... - Gary
@@ -389,7 +397,7 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
      }
      // clear my_argv[], reprint shell prompt, clear cmd - Gary
      free_argv();
-     printf("[MY_SHELL ] ");
+     printf("shell> ");
      bzero(cmd, 100);
     }
     // clear tmp - Gary
