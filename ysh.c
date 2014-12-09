@@ -15,9 +15,9 @@
 extern int errno;
 
 typedef void (*sighandler_t)(int);
-//static 
+//static
 char *my_argv[100], *my_envp[100];
-//static 
+//static
 char *search_path[10];
 
 int argv_index = 0;
@@ -37,25 +37,25 @@ void get_cpu_usage()
 		cpufile = fopen("/proc/loadavg", "r");
 		fscanf(cpufile, "%s%*[^\n]", cpu);
 
-		
-		fclose(cpufile);		
-		
+
+		fclose(cpufile);
+
 		cpu_float = atof(cpu);
 
 		usage[counter % 1440] = cpu_float;
 
 
 		//printf("usage[%d]
-		cpu_avg = 0; 
+		cpu_avg = 0;
 		for (x = 0; x <= counter % 1440; x++)
 		{
 			cpu_avg = cpu_avg + usage[x];
 			//printf("%d, %2.2f\n", x, cpu_avg);
 			//sleep(5);
 		}
-		if (counter < 1440)		
+		if (counter < 1440)
 			cpu_avg = cpu_avg / ((counter % 1440) + 1);
-		else 
+		else
 			cpu_avg = (cpu_avg / 1440);
 
 		counter++;
@@ -199,7 +199,7 @@ void call_execvp_pipe_process(int d) {
 // Background Process - Shashi
 void background_process(char* cmd, int k)
 {
-    
+
     int i;
     pid_t child_process_id = 0;
     pid_t sid = 0;
@@ -224,7 +224,7 @@ void background_process(char* cmd, int k)
     }
 
 
-    int file = open(filename, O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH); 
+    int file = open(filename, O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH);
     printf("cmd is %s\n", cmd);
 
     // create child process and check for failure
@@ -240,7 +240,7 @@ void background_process(char* cmd, int k)
         // return success in exit status
     }
     //process id if the user wants to kill the background process
-    
+
     //parent process exits
     if((sid = setsid()) < 0){return;}
 
@@ -275,6 +275,10 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
  char *tmp = (char *)malloc(sizeof(char) * 100);
  char *path_str = (char *)malloc(sizeof(char) * 256);
  char *cmd = (char *)malloc(sizeof(char) * 100);
+ char *old_argv[100];
+ char *old_cmd = (char *)malloc(sizeof(char) * 100);
+ int g = 0;
+ int old_argv_index;
 
  pthread_t xtid;
  pthread_create(&xtid, NULL, (void* (*) (void*)) get_cpu_usage, NULL);
@@ -322,7 +326,7 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
     } else {
         wait(NULL);
     }
-    
+
     // print the my_shell prompt and unnecessarily flush stdout... again - Gary
     printf("[MY_SHELL ] ");
     fflush(stdout);
@@ -333,7 +337,7 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
     while(c != EOF) {
 	int d = 0;
 	int t = 0;
-	
+
 	char cpuredirect[] = "cpu";
 	char piperedirect[]= "|";
 	char outputredirect[] = ">";
@@ -347,7 +351,7 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
             // if at the null terminator in temp, just reprint the my_shell prompt - Gary
             case '\n': if(tmp[0] == '\0') {
                        printf("[MY_SHELL ] ");
-                   // if not at null terminator in tmp then ...- Gary 
+                   // if not at null terminator in tmp then ...- Gary
                    } else {
                        // split tmp into arguments and store them in my_argv - Gary
                        fill_argv(tmp);
@@ -363,52 +367,59 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
 				   for (d = 0; d <= argv_index; d++)
 			           {
 					printf("my_argv[d] = %s\n", my_argv[d]);
-				      if(strcmp(my_argv[d], outputredirect) == 0)
+						/*if(strcmp(my_argv[d], "!!") == 0)
+							{
+								cmd = old_cmd;
+								for (g = 0; g <= old_argv_index; g++)
+									{
+
+											printf("old_argv[0] = %s\n", old_argv[0]);
+											strcpy(my_argv[g], old_argv[0]);
+
+									}
+							}*/
+
+							if(strcmp(my_argv[d], outputredirect) == 0)
 				      {
 			 	          //printf("Found >>\n");
-					  t = 1;
-			  	          break;
-			              }
+									call_execvp_outredirect(d);
+			  	        break;
+			        }
 				      else if(strcmp(my_argv[d], inputredirect) == 0)
 				      {
-				          t = 2;
-					  break;
+									call_execvp_inredirect(d);
+					  			break;
 				      }
 				      else if(strcmp(my_argv[d], piperedirect) == 0){
-					  t = 3;
-					  break;
+									call_execvp_pipe_process(d);
+					  			break;
 				      }
 				      else if(strcmp(my_argv[d], cpuredirect) == 0)
 				      {
-					  //printf("Found ??\n");
-					  t = 4;
-					  break;
+					  			//printf("Found ??\n");
+									printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
+					  			break;
 				      }
 				      else if(strcmp(my_argv[d], backgroundredirect) == 0)
-                      		      {
-                        		  t = 5;
-                        		  break;
-                		      }
-					
+              {
+									background_process(cmd, d);;
+                  break;
+              }
+							else
+									call_execvp();
+
 				   }
-                               // if output redirect wasn't found - Gary
-			       if(t == 0)
-                                   call_execvp();
-                               // if output redirect was found - Gary
-			       else if (t == 1)
-				   call_execvp_outredirect(d);
-			       else if (t == 2)
-			           call_execvp_inredirect(d);
-			       else if (t == 3)
-			           call_execvp_pipe_process(d);
-			       else if ( t == 4)
-				   printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
-				else if( t == 5)
-                    		    background_process(cmd, d);	
-                    		    
-			       t = 0;
-			       //printf("d = %d\n",d);
-			   // if attach_path is not equal to 0 - Gary: attach_path is always 0
+					  /*old_cmd = cmd;
+						old_argv_index = argv_index;
+						printf("argv_index = %d\n",argv_index);
+						printf("my_argv[argv_index] = %s\n",my_argv[argv_index]);
+						for (g = 0; g <= argv_index; g++)
+						{
+							strcpy(old_argv[0], my_argv[g]);
+						}
+
+			      printf("Copied!\n");*/
+			   		// if attach_path is not equal to 0 - Gary: attach_path is always 0
                            } else {
                                printf("%s: command not found\n", cmd);
                            }
