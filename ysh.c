@@ -12,16 +12,12 @@
 #include <pthread.h>
 #include <unistd.h>
 
+
 extern int errno;
-
 typedef void (*sighandler_t)(int);
-//static
 char *my_argv[100], *my_envp[100];
-//static
 char *search_path[10];
-
 int argv_index = 0;
-
 float usage[1440] = {-1};
 int counter = 0;
 FILE *cpufile;
@@ -29,108 +25,95 @@ char cpu [5];
 float cpu_float;
 float cpu_avg = 0;
 
-void get_cpu_usage()
-{
-	int x;
-	while(1 == 1)
-	{
-		cpufile = fopen("/proc/loadavg", "r");
-		fscanf(cpufile, "%s%*[^\n]", cpu);
 
+void get_cpu_usage() {
+ int x;
+ while(1 == 1) {
+  cpufile = fopen("/proc/loadavg", "r");
+  fscanf(cpufile, "%s%*[^\n]", cpu);
+  fclose(cpufile);
+  cpu_float = atof(cpu);
+  usage[counter % 1440] = cpu_float;
+  //printf("usage[%d]
+  cpu_avg = 0;
 
-		fclose(cpufile);
+  for (x = 0; x <= counter % 1440; x++)	{
+   cpu_avg = cpu_avg + usage[x];
+   //printf("%d, %2.2f\n", x, cpu_avg);
+   //sleep(5);
+  }
 
-		cpu_float = atof(cpu);
+  if (counter < 1440) cpu_avg = cpu_avg / ((counter % 1440) + 1);
+  else	cpu_avg = (cpu_avg / 1440);
 
-		usage[counter % 1440] = cpu_float;
-
-
-		//printf("usage[%d]
-		cpu_avg = 0;
-		for (x = 0; x <= counter % 1440; x++)
-		{
-			cpu_avg = cpu_avg + usage[x];
-			//printf("%d, %2.2f\n", x, cpu_avg);
-			//sleep(5);
-		}
-		if (counter < 1440)
-			cpu_avg = cpu_avg / ((counter % 1440) + 1);
-		else
-			cpu_avg = (cpu_avg / 1440);
-
-		counter++;
-		sleep(60);
-	}
-
+  counter++;
+  sleep(60);
+ }
 }
 
 
 // when a terminal interrupt signal is received... - Gary
-void handle_signal(int signo)
-{
-    // ... print the prompt - Gary
-    printf("\n[MY_SHELL ] ");
-    // ... flush standard output - Gary: I think stdout is unbuffered by default, so this is unneccessary
-    fflush(stdout);
+void handle_signal(int signo) {
+ // ... print the prompt - Gary
+ printf("\n[MY_SHELL ] ");
+ // ... flush standard output - Gary: I think stdout is unbuffered by default, so this is unneccessary
+ //fflush(stdout);
 }
+
 
 // splits tmp_argv into arguments and stores them in my_argv - Gary
-void fill_argv(char *tmp_argv)
-{
-    argv_index = 0;
-    // copying pointer tmp_argv to pointer foo - Gary: intentional obfuscation?
-    char *foo = tmp_argv;
-    //int index = 0;
-    char ret[100];
-    bzero(ret, 100);
-    // iterates through tmp_argv (foo) until null terminator - Gary
-    while(*foo != '\0') {
-    	// arguments capped at 10 for some reason - Gary
-        if(argv_index == 10)
-            break;
+void fill_argv(char *tmp_argv) {
+ argv_index = 0;
+ // copying pointer tmp_argv to pointer foo - Gary: intentional obfuscation?
+ char *foo = tmp_argv;
+ //int index = 0;
+ char ret[100];
+ bzero(ret, 100);
 
-        if(*foo == ' ') {
-            if(my_argv[argv_index] == NULL)
-                my_argv[argv_index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
-            else {
-                bzero(my_argv[argv_index], strlen(my_argv[argv_index]));
-            }
-            strncpy(my_argv[argv_index], ret, strlen(ret));
-            strncat(my_argv[argv_index], "\0", 1);
-            bzero(ret, 100);
-            argv_index++;
-        } else {
-            strncat(ret, foo, 1);
-        }
-        foo++;
-        /*printf("foo is %c\n", *foo);*/
-    }
-    my_argv[argv_index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
-    strncpy(my_argv[argv_index], ret, strlen(ret));
-    strncat(my_argv[argv_index], "\0", 1);
+ // iterates through tmp_argv (foo) until null terminator - Gary
+ while(*foo != '\0') {
+  // arguments capped at 10 for some reason - Gary
+  if(argv_index == 10) break;
+  if(*foo == ' ') {
+   if(my_argv[argv_index] == NULL) my_argv[argv_index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
+   else bzero(my_argv[argv_index], strlen(my_argv[argv_index]));
+   strncpy(my_argv[argv_index], ret, strlen(ret));
+   strncat(my_argv[argv_index], "\0", 1);
+   bzero(ret, 100);
+   argv_index++;
+  }
+  else strncat(ret, foo, 1);
+  foo++;
+  /*printf("foo is %c\n", *foo);*/
+ }
+
+ my_argv[argv_index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
+ strncpy(my_argv[argv_index], ret, strlen(ret));
+ strncat(my_argv[argv_index], "\0", 1);
 }
+
 
 // adds a path to cmd if it finds a valid path to cmd in search_path[] - Gary: appears to always return 0
-int attach_path(char *cmd)
-{
-    char ret[100];
-    int index;
-    int fd;
-    bzero(ret, 100);
-    // iterates through the paths in search_path[] - Gary
-    for(index=0;search_path[index]!=NULL;index++) {
-    	// adds the cmd to each search_path - Gary
-        strcpy(ret, search_path[index]);
-        strncat(ret, cmd, strlen(cmd));
-        // attempts to open the cmd at the search path, if it finds one that works it adds the path to the cmd - Gary
-        if((fd = open(ret, O_RDONLY)) > 0) {
-            strncpy(cmd, ret, strlen(ret));
-            close(fd);
-            return 0;
-        }
-    }
-    return 0;
+int attach_path(char *cmd) {
+ char ret[100];
+ int index;
+ int fd;
+ bzero(ret, 100);
+ // iterates through the paths in search_path[] - Gary
+ for(index=0;search_path[index]!=NULL;index++) {
+  // adds the cmd to each search_path - Gary
+  strcpy(ret, search_path[index]);
+  strncat(ret, cmd, strlen(cmd));
+  // attempts to open the cmd at the search path, if it finds one that works it adds the path to the cmd - Gary
+  if((fd = open(ret, O_RDONLY)) > 0) {
+   strncpy(cmd, ret, strlen(ret));
+   close(fd);
+   return 0;
+  }
+ }
+ return 0;
 }
+
 
 // execute command in my_argv[0]
 void call_execvp() {
@@ -141,6 +124,7 @@ void call_execvp() {
  }
  else wait(NULL);
 }
+
 
 // input redirection
 void call_execvp_inredirect(int d) {
@@ -154,6 +138,7 @@ void call_execvp_inredirect(int d) {
  }
  else wait(NULL);
 }
+
 
 // output redirection
 void call_execvp_outredirect(int d) {
@@ -169,6 +154,7 @@ void call_execvp_outredirect(int d) {
  }
  else wait(NULL);
 }
+
 
 // piping process
 void call_execvp_pipe_process(int d) {
@@ -194,78 +180,66 @@ void call_execvp_pipe_process(int d) {
  else wait(NULL);
 }
 
-// Background Process - Shashi
+
 // Create a background process that outputs CPU usage information for every 10 seconds
-// Background Process - Shashi
-void background_process(char* cmd, int k)
-{
+void background_process(char* cmd, int k) {
+ int i;
+ pid_t child_process_id = 0;
+ pid_t sid = 0;
+ char *filename = my_argv[k + 1];
+ char *line[100];
+ int argv_size;
 
-    int i;
-    pid_t child_process_id = 0;
-    pid_t sid = 0;
-    char *filename = my_argv[k + 1];
-    char *line[100];
-    int argv_size;
+ for (i=0;i<100;i++) {
+  if(i < k){
+   argv_size = strlen(my_argv[i]);
+   line[i] = malloc(argv_size*sizeof(char));
+   strcpy(line[i], my_argv[i]);
+  }
+  else line[i] = NULL;
+ }
 
-    for (i=0;i<100;i++)
-    {
-        if(i < k){
-            argv_size = strlen(my_argv[i]);
-            line[i] = malloc(argv_size*sizeof(char));
-            strcpy(line[i], my_argv[i]);
-        }
-        else
-            line[i] = NULL;
-    }
+ if (filename  == NULL) filename = "BackgroundLog.txt";
 
-    if (filename  == NULL)
-    {
-        filename = "BackgroundLog.txt";
-    }
+ int file = open(filename, O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH);
+ printf("cmd is %s\n", cmd);
 
+ // create child process and check for failure
+ if ((child_process_id = fork()) < 0) {
+  printf("fork failed while creating background process!\n");
+  // Return failure in exit status
+  return;
+ }
+ else if (child_process_id > 0) {
+  printf("process_id of background process %d \n", child_process_id);
+  // return success in exit status
+ }
+ //process id if the user wants to kill the background process
 
-    int file = open(filename, O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH);
-    printf("cmd is %s\n", cmd);
+ //parent process exits
+ if((sid = setsid()) < 0) return;
 
-    // create child process and check for failure
-    if ((child_process_id = fork()) < 0)
-    {
-        printf("fork failed while creating background process!\n");
-        // Return failure in exit status
-        return;
-    }
-    else if (child_process_id > 0)
-    {
-        printf("process_id of background process %d \n", child_process_id);
-        // return success in exit status
-    }
-    //process id if the user wants to kill the background process
-
-    //parent process exits
-    if((sid = setsid()) < 0){return;}
-
-
-    //output to file
-    dup2(file,1);
-    //execute the command
-    i = execvp(cmd, line);
-    printf("errno is %d\n", errno);
-    if(i < 0) {
-        printf("%s: %s\n", cmd, "command not found"); //This is the error message being printed from 'echo'. The error spawns from the value of 'i', which is assigned by the function 'execve(cmd, my_argv, my_envp); -Andrew
-        exit(1);
-    exit(0);
-    }
+ //output to file
+ dup2(file,1);
+ //execute the command
+ i = execvp(cmd, line);
+ printf("errno is %d\n", errno);
+ if(i < 0) {
+  printf("%s: %s\n", cmd, "command not found"); //This is the error message being printed from 'echo'. The error spawns from the value of 'i', which is assigned by the function 'execve(cmd, my_argv, my_envp); -Andrew
+  exit(1);
+  exit(0);
+ }
 }
 
+
 // clears my_argv[] - Gary
-void free_argv()
-{
-    int index;
-    for(index=0;my_argv[index]!=NULL;index++) {
-        bzero(my_argv[index], strlen(my_argv[index])+1);
-        my_argv[index] = NULL;
-        free(my_argv[index]);
-    }
+void free_argv() {
+ int index;
+ for(index=0;my_argv[index]!=NULL;index++) {
+  bzero(my_argv[index], strlen(my_argv[index])+1);
+  my_argv[index] = NULL;
+  free(my_argv[index]);
+ }
 }
 
 // main - Gary
@@ -317,142 +291,120 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
   else strncat(ret, tmp3, 1);
  }
 
-    // fork into two processes and ... - Gary : This seems like a complicated way to clear the screen.
-    // ... in the child processes run clear and exit the child process - Gary
-    if(fork() == 0) {
-        execve("/usr/bin/clear", argv, my_envp);
-        exit(1);
-    // ... in the parent process wait for the child to exit - Gary
-    } else {
-        wait(NULL);
-    }
+ // clear the screen
+ if(fork() == 0) execvp("clear", argv);
+ else wait(NULL);
 
-    // print the my_shell prompt and unnecessarily flush stdout... again - Gary
-    printf("[MY_SHELL ] ");
-    fflush(stdout);
+ // print the my_shell prompt
+ printf("MY_SHELL> ");
 
-
-    //In order to get redirection working, we need to look at the dup2 system call -Andrew
-    // c = getchar(); loops until c is EOF - Gary: EOF never happens
-    while(c != EOF) {
-	int d = 0;
-	int t = 0;
-
-	char cpuredirect[] = "cpu";
-	char piperedirect[]= "|";
-	char outputredirect[] = ">";
-	char inputredirect[] = "<";
-    	char backgroundredirect[] = "&";
-        c = getchar();
-        // switch on character from getchar() - Gary
-        // adds every c to tmp until it gets to newline - Gary
-        switch(c) {
-            // case: newline/enter - Gary: a massive switch statement with only one case in it
-            // if at the null terminator in temp, just reprint the my_shell prompt - Gary
-            case '\n': if(tmp[0] == '\0') {
-                       printf("[MY_SHELL ] ");
-                   // if not at null terminator in tmp then ...- Gary
-                   } else {
-                       // split tmp into arguments and store them in my_argv - Gary
-                       fill_argv(tmp);
-                       // copy the first argv into cmd and print it - Gary
-		       strncpy(cmd, my_argv[0], strlen(my_argv[0]));
-		       printf("CMD: %s\n", cmd);
-                       strncat(cmd, "\0", 1);
-                       // if there are no forwards slashes in the cmd ... - Gary
-                       if(index(cmd, '/') == NULL || strcmp(cmd, "./SuperBash") == 0) {
-                       	   // adds a path to cmd if a valid one is found in search_paths[] - Gary: attach_path always == 0
-                           if(attach_path(cmd) == 0) {
-                           	   // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found - Gary
-				   for (d = 0; d <= argv_index; d++)
-			           {
-					printf("my_argv[d] = %s\n", my_argv[d]);
-						/*if(strcmp(my_argv[d], "!!") == 0)
-							{
-								cmd = old_cmd;
-								for (g = 0; g <= old_argv_index; g++)
-									{
-
-											printf("old_argv[0] = %s\n", old_argv[0]);
-											strcpy(my_argv[g], old_argv[0]);
-
-									}
-							}*/
-
-							if(strcmp(my_argv[d], outputredirect) == 0)
-				      {
-			 	          //printf("Found >>\n");
-									call_execvp_outredirect(d);
-			  	        break;
-			        }
-				      else if(strcmp(my_argv[d], inputredirect) == 0)
-				      {
-									call_execvp_inredirect(d);
-					  			break;
-				      }
-				      else if(strcmp(my_argv[d], piperedirect) == 0){
-									call_execvp_pipe_process(d);
-					  			break;
-				      }
-				      else if(strcmp(my_argv[d], cpuredirect) == 0)
-				      {
-					  			//printf("Found ??\n");
-									printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
-					  			break;
-				      }
-				      else if(strcmp(my_argv[d], backgroundredirect) == 0)
-              {
-									background_process(cmd, d);;
-                  break;
-              }
-							else
-									call_execvp();
-
-				   }
-					  /*old_cmd = cmd;
-						old_argv_index = argv_index;
-						printf("argv_index = %d\n",argv_index);
-						printf("my_argv[argv_index] = %s\n",my_argv[argv_index]);
-						for (g = 0; g <= argv_index; g++)
-						{
-							strcpy(old_argv[0], my_argv[g]);
-						}
-
-			      printf("Copied!\n");*/
-			   		// if attach_path is not equal to 0 - Gary: attach_path is always 0
-                           } else {
-                               printf("%s: command not found\n", cmd);
-                           }
-                       // if there was a forward slash in the cmd ... - Gary
-                       } else {
-                       	   // try and open the cmd and if successful exec it - Gary
-                           if((fd = open(cmd, O_RDONLY)) > 0) {
-                               close(fd);
-                               call_execvp();
-                           // if you can't open it then command not found, print error - Gary
-                           } else {
-                               printf("%s: command not found\n", cmd);
-                           }
-                       }
-                       // clear my_argv[], reprint shell prompt, clear cmd - Gary
-                       free_argv();
-                       printf("[MY_SHELL ] ");
-                       bzero(cmd, 100);
-                   }
-                   // clear tmp - Gary
-                   bzero(tmp, 100);
-                   break;
-            // default case: concat c to tmp - Gary
-            default: strncat(tmp, &c, 1);
-                 break;
+ //In order to get redirection working, we need to look at the dup2 system call -Andrew
+ // c = getchar(); loops until c is EOF - Gary: EOF never happens
+ while(c != EOF) {
+  int d = 0;
+  int t = 0;
+  char cpuredirect[] = "cpu";
+  char piperedirect[]= "|";
+  char outputredirect[] = ">";
+  char inputredirect[] = "<";
+  char backgroundredirect[] = "&";
+  c = getchar();
+  // switch on character from getchar() - Gary
+  // adds every c to tmp until it gets to newline - Gary
+  switch(c) {
+   // case: newline/enter - Gary: a massive switch statement with only one case in it
+   // if at the null terminator in temp, just reprint the my_shell prompt - Gary
+   case '\n':
+    if(tmp[0] == '\0') printf("[MY_SHELL ] ");
+    // if not at null terminator in tmp then ...- Gary
+    else {
+     // split tmp into arguments and store them in my_argv - Gary
+     fill_argv(tmp);
+     // copy the first argv into cmd and print it - Gary
+     strncpy(cmd, my_argv[0], strlen(my_argv[0]));
+     printf("CMD: %s\n", cmd);
+     strncat(cmd, "\0", 1);
+     // if there are no forwards slashes in the cmd ... - Gary
+     if(index(cmd, '/') == NULL || strcmp(cmd, "./SuperBash") == 0) {
+      // adds a path to cmd if a valid one is found in search_paths[] - Gary: attach_path always == 0
+      if(attach_path(cmd) == 0) {
+       // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found - Gary
+       for (d = 0; d <= argv_index; d++) {
+        printf("my_argv[d] = %s\n", my_argv[d]);
+        /*
+        if(strcmp(my_argv[d], "!!") == 0) {
+         cmd = old_cmd;
+         for (g = 0; g <= old_argv_index; g++) {
+          printf("old_argv[0] = %s\n", old_argv[0]);
+          strcpy(my_argv[g], old_argv[0]);
+         }
         }
+        */
+        if(strcmp(my_argv[d], outputredirect) == 0) {
+         //printf("Found >>\n");
+         call_execvp_outredirect(d);
+         break;
+        }
+        else if(strcmp(my_argv[d], inputredirect) == 0) {
+         call_execvp_inredirect(d);
+         break;
+        }
+        else if(strcmp(my_argv[d], piperedirect) == 0) {
+         call_execvp_pipe_process(d);
+         break;
+        }
+        else if(strcmp(my_argv[d], cpuredirect) == 0) {
+         //printf("Found ??\n");
+         printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
+	 break;
+	}
+	else if(strcmp(my_argv[d], backgroundredirect) == 0) {
+         background_process(cmd, d);;
+         break;
+        }
+        else call_execvp();
+       }
+       /*
+       old_cmd = cmd;
+       old_argv_index = argv_index;
+       printf("argv_index = %d\n",argv_index);
+       printf("my_argv[argv_index] = %s\n",my_argv[argv_index]);
+       for (g = 0; g <= argv_index; g++) strcpy(old_argv[0], my_argv[g]);
+       printf("Copied!\n");
+       */
+
+       // if attach_path is not equal to 0 - Gary: attach_path is always 0
+      }
+      else printf("%s: command not found\n", cmd);
+     }
+     // if there was a forward slash in the cmd ... - Gary
+     else {
+      // try and open the cmd and if successful exec it - Gary
+      if((fd = open(cmd, O_RDONLY)) > 0) {
+       close(fd);
+       call_execvp();
+       // if you can't open it then command not found, print error - Gary
+      }
+      else  printf("%s: command not found\n", cmd);
+     }
+     // clear my_argv[], reprint shell prompt, clear cmd - Gary
+     free_argv();
+     printf("[MY_SHELL ] ");
+     bzero(cmd, 100);
     }
-    free(tmp);
-    free(path_str);
-    for(i=0;my_envp[i]!=NULL;i++)
-        free(my_envp[i]);
-    for(i=0;i<10;i++)
-        free(search_path[i]);
-    printf("\n");
-    return 0;
+    // clear tmp - Gary
+    bzero(tmp, 100);
+    break;
+    // default case: concat c to tmp - Gary
+   default:
+    strncat(tmp, &c, 1);
+    break;
+  }
+ }
+ free(tmp);
+ free(path_str);
+ for(i=0;my_envp[i]!=NULL;i++) free(my_envp[i]);
+ for(i=0;i<10;i++) free(search_path[i]);
+ printf("\n");
+ return 0;
 }
