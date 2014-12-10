@@ -207,8 +207,7 @@ int main(int argc, char *argv[]) {
  // print the my_shell prompt
  printf("shell> ");
 
- //In order to get redirection working, we need to look at the dup2 system call -Andrew
- // c = getchar(); loops until c is EOF - Gary: EOF never happens
+ // c = getchar(); loops until c is EOF
  while(c != EOF) {
   int d = 0;
   int t = 0;
@@ -220,85 +219,80 @@ int main(int argc, char *argv[]) {
   c = getchar();
   // switch on character from getchar() - Gary
   // adds every c to tmp until it gets to newline - Gary
-  switch(c) {
-   // case: newline/enter - Gary: a massive switch statement with only one case in it
-   // if at the null terminator in temp, just reprint the my_shell prompt - Gary
-   case '\n':
-    if(tmp[0] == '\0') printf("shell> ");
-    // if not at null terminator in tmp then ...- Gary
-    else {
-     // split tmp into arguments and store them in my_argv - Gary
-     fill_argv(tmp);
-     // copy the first argv into cmd and print it - Gary
-     strncpy(cmd, my_argv[0], strlen(my_argv[0]));
-     printf("CMD: %s\n", cmd);
-     strncat(cmd, "\0", 1);
+  // case: newline/enter - Gary: a massive switch statement with only one case in it
+  // if at the null terminator in temp, just reprint the my_shell prompt - Gary
+  if (c == '\n') {
+   if(tmp[0] == '\0') printf("shell> ");
+   // if not at null terminator in tmp then ...- Gary
+   else {
+    // split tmp into arguments and store them in my_argv - Gary
+    fill_argv(tmp);
+    // copy the first argv into cmd and print it - Gary
+    strncpy(cmd, my_argv[0], strlen(my_argv[0]));
+    printf("CMD: %s\n", cmd);
+    strncat(cmd, "\0", 1);
 
-     // adds a path to cmd if a valid one is found in search_paths[] - Gary: attach_path always == 0
-     // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found - Gary
-     for (d = 0; d <= argv_index; d++) {
-      printf("my_argv[d] = %s\n", my_argv[d]);
+    // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found - Gary
+    for (d = 0; d <= argv_index; d++) {
+     printf("my_argv[d] = %s\n", my_argv[d]);
 
-      /*
-      if(strcmp(my_argv[d], "!!") == 0) {
-       cmd = old_cmd;
-       for (g = 0; g <= old_argv_index; g++) {
-        printf("old_argv[0] = %s\n", old_argv[0]);
-        strcpy(my_argv[g], old_argv[0]);
-       }
-      }
-      */
-
-      if(strcmp(my_argv[d], outputredirect) == 0) {
-       t = 1;
-       break;
-      }
-      else if(strcmp(my_argv[d], inputredirect) == 0) {
-       t = 2;
-       break;
-      }
-      else if(strcmp(my_argv[d], piperedirect) == 0) {
-       t = 3;
-       break;
-      }
-      else if(strcmp(my_argv[d], cpuredirect) == 0) {
-       t = 4;
-       break;
-      }
-      else if(strcmp(my_argv[d], backgroundredirect) == 0) {
-       t = 5;
-       break;
+     /*
+     if(strcmp(my_argv[d], "!!") == 0) {
+      cmd = old_cmd;
+      for (g = 0; g <= old_argv_index; g++) {
+       printf("old_argv[0] = %s\n", old_argv[0]);
+       strcpy(my_argv[g], old_argv[0]);
       }
      }
+     */
 
-     if (t == 0) call_execvp();
-     else if (t == 1) call_execvp_outredirect(d);
-     else if (t == 2) call_execvp_inredirect(d);
-     else if (t == 3) call_execvp_pipe_process(d);
-     else if (t == 4) printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
-     else if (t == 5) call_execvp_background_process(d);
-     t = 0;
-
-     //old_cmd = cmd;
-     //old_argv_index = argv_index;
-     //printf("argv_index = %d\n",argv_index);
-     //printf("my_argv[argv_index] = %s\n",my_argv[argv_index]);
-     //for (g = 0; g <= argv_index; g++) strcpy(old_argv[g], my_argv[g]);
-     //printf("Copied!\n");
-
-     // clear my_argv[], reprint shell prompt, clear cmd - Gary
-     free_argv();
-     printf("shell> ");
-     bzero(cmd, 100);
+     if(strcmp(my_argv[d], outputredirect) == 0) {
+      t = 1;
+      break;
+     }
+     else if(strcmp(my_argv[d], inputredirect) == 0) {
+      t = 2;
+      break;
+     }
+     else if(strcmp(my_argv[d], piperedirect) == 0) {
+      t = 3;
+      break;
+     }
+     else if(strcmp(my_argv[d], cpuredirect) == 0) {
+      t = 4;
+      break;
+     }
+     else if(strcmp(my_argv[d], backgroundredirect) == 0) {
+      t = 5;
+      break;
+     }
     }
-    // clear tmp - Gary
-    bzero(tmp, 100);
-    break;
-    // default case: concat c to tmp - Gary
-   default:
-    strncat(tmp, &c, 1);
-    break;
+
+    if (t == 0) call_execvp();
+    else if (t == 1) call_execvp_outredirect(d);
+    else if (t == 2) call_execvp_inredirect(d);
+    else if (t == 3) call_execvp_pipe_process(d);
+    else if (t == 4) printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
+    else if (t == 5) call_execvp_background_process(d);
+    t = 0;
+
+    //old_cmd = cmd;
+    //old_argv_index = argv_index;
+    //printf("argv_index = %d\n",argv_index);
+    //printf("my_argv[argv_index] = %s\n",my_argv[argv_index]);
+    //for (g = 0; g <= argv_index; g++) strcpy(old_argv[g], my_argv[g]);
+    //printf("Copied!\n");
+
+    // clear my_argv[], reprint shell prompt, clear cmd - Gary
+    free_argv();
+    printf("shell> ");
+    bzero(cmd, 100);
+   }
+   // clear tmp - Gary
+   bzero(tmp, 100);
   }
+  // default case: concat c to tmp - Gary
+  else strncat(tmp, &c, 1);
  }
  free(tmp);
  printf("\n");
