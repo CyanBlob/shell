@@ -1,3 +1,24 @@
+/*
+ Group #: 16
+ Members: George Davis
+          Shashi Dongur
+          Gary Johnson
+          Andrew Thomas
+ Class:   CSCE3600
+ Session: Fall 2014
+ Section: T/Th 10:00am
+ Project: Build a Unix Shell
+ Compile: gcc ysh.c - lpthread -o YSH
+ Usage:   see README.md
+ Files:   ysh.c          - this source file
+          YSH            - compiled executable
+          SuperBash.c    - source for SuperBash/Bash++ utility
+          SuperBash      - compiled SuperBash/Bash++ utility
+          pipebuffer.tmp - temporay buffer used by piping command
+          background.log - output file used by background processes
+          README.md      - usage documentation
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -35,13 +56,10 @@ void get_cpu_usage() {
   fclose(cpufile);
   cpu_float = atof(cpu);
   usage[counter % 1440] = cpu_float;
-  //printf("usage[%d]
   cpu_avg = 0;
 
   for (x = 0; x <= counter % 1440; x++)	{
    cpu_avg = cpu_avg + usage[x];
-   //printf("%d, %2.2f\n", x, cpu_avg);
-   //sleep(5);
   }
 
   if (counter < 1440) cpu_avg = cpu_avg / ((counter % 1440) + 1);
@@ -56,15 +74,14 @@ void get_cpu_usage() {
 // splits tmp_argv into arguments and stores them in my_argv
 void fill_argv(char *tmp_argv) {
  argv_index = 0;
- // copying pointer tmp_argv to pointer foo - Gary: intentional obfuscation?
+ // copying pointer tmp_argv to pointer foo - intentional obfuscation?
  char *foo = tmp_argv;
- //int index = 0;
  char ret[100];
  bzero(ret, 100);
 
- // iterates through tmp_argv (foo) until null terminator - Gary
+ // iterates through tmp_argv (foo) until null terminator
  while(*foo != '\0') {
-  // arguments capped at 10 for some reason - Gary
+  // arguments capped at 10 for some reason
   if(argv_index == 10) break;
   if(*foo == ' ') {
    if(my_argv[argv_index] == NULL) my_argv[argv_index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
@@ -76,7 +93,6 @@ void fill_argv(char *tmp_argv) {
   }
   else strncat(ret, foo, 1);
   foo++;
-  /*printf("foo is %c\n", *foo);*/
  }
 
  my_argv[argv_index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
@@ -214,29 +230,26 @@ int main(int argc, char *argv[]) {
   char inputredirect[] = "<";
   char backgroundredirect[] = "&";
   c = getchar();
-  // switch on character from getchar() - Gary
-  // adds every c to tmp until it gets to newline - Gary
+  // switch on character from getchar()
+  // adds every c to tmp until it gets to newline
   // case: newline/enter - Gary: a massive switch statement with only one case in it
-  // if at the null terminator in temp, just reprint the my_shell prompt - Gary
+  // if at the null terminator in temp, just reprint the my_shell prompt
   if (c == '\n') {
    if(tmp[0] == '\0') printf("shell> ");
-   // if not at null terminator in tmp then ...- Gary
+   // if not at null terminator in tmp then ...
    else {
-    // split tmp into arguments and store them in my_argv - Gary
+    // split tmp into arguments and store them in my_argv
     if (!ran_once || !(tmp[0] == '!' && tmp[1] == '!')) {
      free_argv();
      fill_argv(tmp);
      ran_once = 1;
     }
-    // copy the first argv into cmd and print it - Gary
+    // copy the first argv into cmd and print it
     strncpy(cmd, my_argv[0], strlen(my_argv[0]));
-    printf("CMD: %s\n", cmd);
     strncat(cmd, "\0", 1);
 
-    // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found - Gary
+    // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found
     for (d = 0; d <= argv_index; d++) {
-     printf("my_argv[d] = %s\n", my_argv[d]);
-
      if(strcmp(my_argv[d], outputredirect) == 0) {
       t = 1;
       break;
@@ -267,14 +280,14 @@ int main(int argc, char *argv[]) {
     else if (t == 5) call_execvp_background_process(d);
     t = 0;
 
-    // clear my_argv[], reprint shell prompt, clear cmd - Gary
+    // clear my_argv[], reprint shell prompt, clear cmd
     printf("shell> ");
     bzero(cmd, 100);
    }
-   // clear tmp - Gary
+   // clear tmp
    bzero(tmp, 100);
   }
-  // default case: concat c to tmp - Gary
+  // default case: concat c to tmp
   else strncat(tmp, &c, 1);
  }
  free(tmp);
