@@ -15,7 +15,7 @@
 
 extern int errno;
 typedef void (*sighandler_t)(int);
-char *my_argv[100], *my_envp[100];
+char *my_argv[100];
 char *search_path[10];
 int argv_index = 0;
 float usage[1440] = {-1};
@@ -225,9 +225,8 @@ void background_process(char* cmd, int k) {
  i = execvp(cmd, line);
  printf("errno is %d\n", errno);
  if(i < 0) {
-  printf("%s: %s\n", cmd, "command not found"); //This is the error message being printed from 'echo'. The error spawns from the value of 'i', which is assigned by the function 'execve(cmd, my_argv, my_envp); -Andrew
+  printf("%s: %s\n", cmd, "command not found");
   exit(1);
-  exit(0);
  }
 }
 
@@ -262,15 +261,9 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
  signal(SIGINT, SIG_IGN);
  signal(SIGINT, handle_signal);
 
- // copies envp into my_envp - Gary: Why? Couldn't envp be used everywhere my_envp is used?
- for (i = 0; envp[i] != NULL; i++) {
-  my_envp[i] = (char*) malloc(sizeof(char) * (strlen(envp[i]) + 1));
-  memcpy(my_envp[i], envp[i], strlen(envp[i]));
- }
-
  // copies the variable in envp that contains PATH to path_str - Gary
  char* tmp2 = NULL;
- for (i = 0; tmp2 == NULL; i++) tmp2 = strstr(my_envp[i], "PATH");
+ for (i = 0; tmp2 == NULL; i++) tmp2 = strstr(envp[i], "PATH");
  strncpy(path_str, tmp2, strlen(tmp2));
 
  // extracts individual paths from path_str and adds them to the search_path[] array - Gary
@@ -411,7 +404,6 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
  }
  free(tmp);
  free(path_str);
- for(i=0;my_envp[i]!=NULL;i++) free(my_envp[i]);
  for(i=0;i<10;i++) free(search_path[i]);
  printf("\n");
  return 0;
