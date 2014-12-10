@@ -188,10 +188,7 @@ int main(int argc, char *argv[]) {
  char *cmd = (char *)malloc(sizeof(char) * 100);
 
  // old command variables
- char *old_argv[100];
- char *old_cmd = (char *)malloc(sizeof(char) * 100);
- int g = 0;
- int old_argv_index;
+ int ran_once = 0;
 
  // cpu usage thread generation
  pthread_t xtid;
@@ -226,7 +223,11 @@ int main(int argc, char *argv[]) {
    // if not at null terminator in tmp then ...- Gary
    else {
     // split tmp into arguments and store them in my_argv - Gary
-    fill_argv(tmp);
+    if (!ran_once || !(tmp[0] == '!' && tmp[1] == '!')) {
+     free_argv();
+     fill_argv(tmp);
+     ran_once = 1;
+    }
     // copy the first argv into cmd and print it - Gary
     strncpy(cmd, my_argv[0], strlen(my_argv[0]));
     printf("CMD: %s\n", cmd);
@@ -235,16 +236,6 @@ int main(int argc, char *argv[]) {
     // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found - Gary
     for (d = 0; d <= argv_index; d++) {
      printf("my_argv[d] = %s\n", my_argv[d]);
-
-     /*
-     if(strcmp(my_argv[d], "!!") == 0) {
-      cmd = old_cmd;
-      for (g = 0; g <= old_argv_index; g++) {
-       printf("old_argv[0] = %s\n", old_argv[0]);
-       strcpy(my_argv[g], old_argv[0]);
-      }
-     }
-     */
 
      if(strcmp(my_argv[d], outputredirect) == 0) {
       t = 1;
@@ -276,15 +267,7 @@ int main(int argc, char *argv[]) {
     else if (t == 5) call_execvp_background_process(d);
     t = 0;
 
-    //old_cmd = cmd;
-    //old_argv_index = argv_index;
-    //printf("argv_index = %d\n",argv_index);
-    //printf("my_argv[argv_index] = %s\n",my_argv[argv_index]);
-    //for (g = 0; g <= argv_index; g++) strcpy(old_argv[g], my_argv[g]);
-    //printf("Copied!\n");
-
     // clear my_argv[], reprint shell prompt, clear cmd - Gary
-    free_argv();
     printf("shell> ");
     bzero(cmd, 100);
    }
