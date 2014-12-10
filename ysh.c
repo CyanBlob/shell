@@ -73,6 +73,14 @@ void get_cpu_usage() {
 
 // splits tmp_argv into arguments and stores them in my_argv
 void fill_argv(char *tmp_argv) {
+ // clear argv
+ int index;
+ for(index=0;my_argv[index]!=NULL;index++) {
+  bzero(my_argv[index], strlen(my_argv[index])+1);
+  my_argv[index] = NULL;
+  free(my_argv[index]);
+ }
+
  argv_index = 0;
  // copying pointer tmp_argv to pointer foo - intentional obfuscation?
  char *foo = tmp_argv;
@@ -184,18 +192,6 @@ void call_execvp_background_process(int d) {
  else printf("process_id of background process %d \n", child_pid);
 }
 
-
-// clears my_argv[]
-void free_argv() {
- int index;
- for(index=0;my_argv[index]!=NULL;index++) {
-  bzero(my_argv[index], strlen(my_argv[index])+1);
-  my_argv[index] = NULL;
-  free(my_argv[index]);
- }
-}
-
-
 // main
 int main(int argc, char *argv[]) {
  char c;
@@ -240,7 +236,6 @@ int main(int argc, char *argv[]) {
    else {
     // split tmp into arguments and store them in my_argv
     if (!ran_once || !(tmp[0] == '!' && tmp[1] == '!')) {
-     free_argv();
      fill_argv(tmp);
      ran_once = 1;
     }
