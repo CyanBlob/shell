@@ -25,6 +25,7 @@ float cpu_float;
 float cpu_avg = 0;
 
 
+// gets cpu usage
 void get_cpu_usage() {
  int x;
  while(1 == 1) {
@@ -50,7 +51,8 @@ void get_cpu_usage() {
  }
 }
 
-// splits tmp_argv into arguments and stores them in my_argv - Gary
+
+// splits tmp_argv into arguments and stores them in my_argv
 void fill_argv(char *tmp_argv) {
  argv_index = 0;
  // copying pointer tmp_argv to pointer foo - Gary: intentional obfuscation?
@@ -147,6 +149,7 @@ void call_execvp_pipe_process(int d) {
  else wait(NULL);
 }
 
+
 // runs a process in the background
 void call_execvp_background_process(int d) {
  pid_t child_pid = fork();
@@ -165,7 +168,7 @@ void call_execvp_background_process(int d) {
 }
 
 
-// clears my_argv[] - Gary
+// clears my_argv[]
 void free_argv() {
  int index;
  for(index=0;my_argv[index]!=NULL;index++) {
@@ -175,7 +178,8 @@ void free_argv() {
  }
 }
 
-// main - Gary
+
+// main
 int main(int argc, char *argv[]) {
  char c;
  int i, fd;
