@@ -57,17 +57,23 @@ int main(int argc, char* argv[]) {
 
   //replaces times with second part of while loop
   else if (c == 't') {
-   const char s[] = "times\n\n{";
+   char s[] = "times\n";
    char b[9] = "t";
    int i;
    for (i = 0; b[i] == s[i]; i++) b[i+1] = fgetc(stdin);
    c = b[i];
    b[i] = '\0';
-   if (i == strlen(s)) fputs("]\n\ndo", stdout);
+   if (i == strlen(s)) fputs("]\n", stdout);
    else fputs(b, stdout);
   }
 
-  //replaces closing bracket with third part of while loop
+  // replace opening brack with third part of while loop
+  else if (c == '{') {
+   fputs("do", stdout);
+   c = fgetc(stdin);
+  }
+
+  //replaces closing bracket with fourth part of while loop
   else if (c == '}') {
    fputs("repeatIndex1=$[$repeatIndex1+1]\n\ndone", stdout);
    c = fgetc(stdin);
