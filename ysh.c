@@ -16,7 +16,6 @@
 extern int errno;
 typedef void (*sighandler_t)(int);
 char *my_argv[100];
-char *search_path[10];
 int argv_index = 0;
 float usage[1440] = {-1};
 int counter = 0;
@@ -90,28 +89,6 @@ void fill_argv(char *tmp_argv) {
  my_argv[argv_index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
  strncpy(my_argv[argv_index], ret, strlen(ret));
  strncat(my_argv[argv_index], "\0", 1);
-}
-
-
-// adds a path to cmd if it finds a valid path to cmd in search_path[] - Gary: appears to always return 0
-int attach_path(char *cmd) {
- char ret[100];
- int index;
- int fd;
- bzero(ret, 100);
- // iterates through the paths in search_path[] - Gary
- for(index=0;search_path[index]!=NULL;index++) {
-  // adds the cmd to each search_path - Gary
-  strcpy(ret, search_path[index]);
-  strncat(ret, cmd, strlen(cmd));
-  // attempts to open the cmd at the search path, if it finds one that works it adds the path to the cmd - Gary
-  if((fd = open(ret, O_RDONLY)) > 0) {
-   strncpy(cmd, ret, strlen(ret));
-   close(fd);
-   return 0;
-  }
- }
- return 0;
 }
 
 
@@ -242,11 +219,10 @@ void free_argv() {
 }
 
 // main - Gary
-int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores the users environment variables. -Andrew
+int main(int argc, char *argv[]) {
  char c;
  int i, fd;
  char *tmp = (char *)malloc(sizeof(char) * 100);
- char *path_str = (char *)malloc(sizeof(char) * 256);
  char *cmd = (char *)malloc(sizeof(char) * 100);
  char *old_argv[100];
  char *old_cmd = (char *)malloc(sizeof(char) * 100);
@@ -260,29 +236,6 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
  // handle terminal interrupt signals with the function handle_signal - Gary
  signal(SIGINT, SIG_IGN);
  signal(SIGINT, handle_signal);
-
- // copies the variable in envp that contains PATH to path_str - Gary
- char* tmp2 = NULL;
- for (i = 0; tmp2 == NULL; i++) tmp2 = strstr(envp[i], "PATH");
- strncpy(path_str, tmp2, strlen(tmp2));
-
- // extracts individual paths from path_str and adds them to the search_path[] array - Gary
- char ret[100];
- char* tmp3 = path_str;
- for (tmp3 = path_str; *tmp3 != '='; tmp3++);
- tmp3++;
- i = 0;
- for (tmp3++; *tmp3 != '\0'; tmp3++) {
-  if (*tmp == ':') {
-   strncat(ret, "/", 1);
-   search_path[i] = (char*) malloc(sizeof(char) * (strlen(ret) + 1));
-   strncat(search_path[i], ret, strlen(ret));
-   strncat(search_path[i], "\0", 1);
-   i++;
-   bzero(ret, 100);
-  }
-  else strncat(ret, tmp3, 1);
- }
 
  // clear the screen
  if(fork() == 0) execvp("clear", argv);
@@ -320,63 +273,59 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
      // if there are no forwards slashes in the cmd ... - Gary
      if(index(cmd, '/') == NULL || strcmp(cmd, "./SuperBash") == 0) {
       // adds a path to cmd if a valid one is found in search_paths[] - Gary: attach_path always == 0
-      if(attach_path(cmd) == 0) {
-       // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found - Gary
-       for (d = 0; d <= argv_index; d++) {
-        printf("my_argv[d] = %s\n", my_argv[d]);
-
-        /*
-        if(strcmp(my_argv[d], "!!") == 0) {
-         cmd = old_cmd;
-         for (g = 0; g <= old_argv_index; g++) {
-          printf("old_argv[0] = %s\n", old_argv[0]);
-          strcpy(my_argv[g], old_argv[0]);
-         }
-        }
-        */
-
-        if(strcmp(my_argv[d], outputredirect) == 0) {
-         t = 1;
-         break;
-        }
-        else if(strcmp(my_argv[d], inputredirect) == 0) {
-         t = 2;
-         break;
-        }
-        else if(strcmp(my_argv[d], piperedirect) == 0) {
-         t = 3;
-         break;
-        }
-        else if(strcmp(my_argv[d], cpuredirect) == 0) {
-         t = 4;
-	 break;
-	}
-	else if(strcmp(my_argv[d], backgroundredirect) == 0) {
-         t = 5;
-         break;
-        }
-       }
-
-       if (t == 0) call_execvp();
-       else if (t == 1) call_execvp_outredirect(d);
-       else if (t == 2) call_execvp_inredirect(d);
-       else if (t == 3) call_execvp_pipe_process(d);
-       else if (t == 4) printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
-       else if (t == 5) background_process(cmd, d);
-       t = 0;
+      // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found - Gary
+      for (d = 0; d <= argv_index; d++) {
+       printf("my_argv[d] = %s\n", my_argv[d]);
 
        /*
-       old_cmd = cmd;
-       old_argv_index = argv_index;
-       printf("argv_index = %d\n",argv_index);
-       printf("my_argv[argv_index] = %s\n",my_argv[argv_index]);
-       for (g = 0; g <= argv_index; g++) strcpy(old_argv[0], my_argv[g]);
-       printf("Copied!\n");
+       if(strcmp(my_argv[d], "!!") == 0) {
+        cmd = old_cmd;
+        for (g = 0; g <= old_argv_index; g++) {
+         printf("old_argv[0] = %s\n", old_argv[0]);
+         strcpy(my_argv[g], old_argv[0]);
+        }
+       }
        */
 
+       if(strcmp(my_argv[d], outputredirect) == 0) {
+        t = 1;
+        break;
+       }
+       else if(strcmp(my_argv[d], inputredirect) == 0) {
+        t = 2;
+        break;
+       }
+       else if(strcmp(my_argv[d], piperedirect) == 0) {
+        t = 3;
+        break;
+       }
+       else if(strcmp(my_argv[d], cpuredirect) == 0) {
+        t = 4;
+        break;
+       }
+       else if(strcmp(my_argv[d], backgroundredirect) == 0) {
+        t = 5;
+        break;
+       }
       }
-      // if attach_path is not equal to 0 - Gary: attach_path is always 0
-      else printf("%s: command not found\n", cmd);
+
+      if (t == 0) call_execvp();
+      else if (t == 1) call_execvp_outredirect(d);
+      else if (t == 2) call_execvp_inredirect(d);
+      else if (t == 3) call_execvp_pipe_process(d);
+      else if (t == 4) printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
+      else if (t == 5) background_process(cmd, d);
+      t = 0;
+
+      /*
+      old_cmd = cmd;
+      old_argv_index = argv_index;
+      printf("argv_index = %d\n",argv_index);
+      printf("my_argv[argv_index] = %s\n",my_argv[argv_index]);
+      for (g = 0; g <= argv_index; g++) strcpy(old_argv[0], my_argv[g]);
+      printf("Copied!\n");
+      */
+
      }
      // if there was a forward slash in the cmd ... - Gary
      else {
@@ -403,8 +352,6 @@ int main(int argc, char *argv[], char *envp[]) { //envp is an array that stores 
   }
  }
  free(tmp);
- free(path_str);
- for(i=0;i<10;i++) free(search_path[i]);
  printf("\n");
  return 0;
 }
