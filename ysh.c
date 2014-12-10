@@ -50,16 +50,6 @@ void get_cpu_usage() {
  }
 }
 
-
-// when a terminal interrupt signal is received... - Gary
-void handle_signal(int signo) {
- // ... print the prompt - Gary
- printf("\nshell> ");
- // ... flush standard output - Gary: I think stdout is unbuffered by default, so this is unneccessary
- //fflush(stdout);
-}
-
-
 // splits tmp_argv into arguments and stores them in my_argv - Gary
 void fill_argv(char *tmp_argv) {
  argv_index = 0;
@@ -157,54 +147,21 @@ void call_execvp_pipe_process(int d) {
  else wait(NULL);
 }
 
+// runs a process in the background
+void call_execvp_background_process(int d) {
+ pid_t child_pid = fork();
 
-// Create a background process that outputs CPU usage information for every 10 seconds
-void background_process(char* cmd, int k) {
- int i;
- pid_t child_process_id = 0;
- pid_t sid = 0;
- char *filename = my_argv[k + 1];
- char *line[100];
- int argv_size;
-
- for (i=0;i<100;i++) {
-  if(i < k){
-   argv_size = strlen(my_argv[i]);
-   line[i] = malloc(argv_size*sizeof(char));
-   strcpy(line[i], my_argv[i]);
-  }
-  else line[i] = NULL;
- }
-
- if (filename  == NULL) filename = "BackgroundLog.txt";
-
- int file = open(filename, O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH);
- printf("cmd is %s\n", cmd);
-
- // create child process and check for failure
- if ((child_process_id = fork()) < 0) {
-  printf("fork failed while creating background process!\n");
-  // Return failure in exit status
-  return;
- }
- else if (child_process_id > 0) {
-  printf("process_id of background process %d \n", child_process_id);
-  // return success in exit status
- }
- //process id if the user wants to kill the background process
-
- //parent process exits
- if((sid = setsid()) < 0) return;
-
- //output to file
- dup2(file,1);
- //execute the command
- i = execvp(cmd, line);
- printf("errno is %d\n", errno);
- if(i < 0) {
-  printf("%s: %s\n", cmd, "command not found");
+ if (child_pid == 0) {
+  my_argv[d] = NULL;
+  char* filename = my_argv[d + 1];
+  if (filename == NULL) filename = "background.log";
+  int file = open(filename, O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH);
+  dup2(file, 1);
+  execvp(my_argv[0], my_argv);
+  printf("command not found: %s\n", my_argv[0]);
   exit(1);
  }
+ else printf("process_id of background process %d \n", child_pid);
 }
 
 
@@ -232,10 +189,8 @@ int main(int argc, char *argv[]) {
  pthread_t xtid;
  pthread_create(&xtid, NULL, (void* (*) (void*)) get_cpu_usage, NULL);
 
- // ignore terminal interrupt signals - Gary: seems redundant given the next line
- // handle terminal interrupt signals with the function handle_signal - Gary
- signal(SIGINT, SIG_IGN);
- signal(SIGINT, handle_signal);
+ // ignore signals from zombie children (thus automatically reaping them)
+ signal(SIGCHLD, SIG_IGN);
 
  // clear the screen
  if(fork() == 0) execvp("clear", argv);
@@ -314,7 +269,7 @@ int main(int argc, char *argv[]) {
       else if (t == 2) call_execvp_inredirect(d);
       else if (t == 3) call_execvp_pipe_process(d);
       else if (t == 4) printf("Your current cpu usage is:\n1 minute average: %2.2f\n24 hour average: %2.2f\n", cpu_float, cpu_avg);
-      else if (t == 5) background_process(cmd, d);
+      else if (t == 5) call_execvp_background_process(d);
       t = 0;
 
       /*
