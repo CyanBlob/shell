@@ -19,20 +19,11 @@
           README.md      - usage documentation
 */
 
-
+#include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
 #include <string.h>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <ctype.h>
-#include <errno.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <pthread.h>
-#include <unistd.h>
 
 
 char* my_argv[100] = { NULL };
