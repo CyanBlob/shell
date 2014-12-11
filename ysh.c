@@ -19,6 +19,7 @@
           README.md      - usage documentation
 */
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -34,8 +35,7 @@
 #include <unistd.h>
 
 
-char *my_argv[100];
-int argv_index = 0;
+char* my_argv[100] = { NULL };
 
 
 // cpu usage globals
@@ -68,44 +68,6 @@ void get_cpu_usage() {
   counter++;
   sleep(60);
  }
-}
-
-
-// splits tmp_argv into arguments and stores them in my_argv
-void fill_argv(char *tmp_argv) {
- // clear argv
- int index;
- for(index=0;my_argv[index]!=NULL;index++) {
-  bzero(my_argv[index], strlen(my_argv[index])+1);
-  my_argv[index] = NULL;
-  free(my_argv[index]);
- }
-
- argv_index = 0;
- // copying pointer tmp_argv to pointer foo - intentional obfuscation?
- char *foo = tmp_argv;
- char ret[100];
- bzero(ret, 100);
-
- // iterates through tmp_argv (foo) until null terminator
- while(*foo != '\0') {
-  // arguments capped at 10 for some reason
-  if(argv_index == 10) break;
-  if(*foo == ' ') {
-   if(my_argv[argv_index] == NULL) my_argv[argv_index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
-   else bzero(my_argv[argv_index], strlen(my_argv[argv_index]));
-   strncpy(my_argv[argv_index], ret, strlen(ret));
-   strncat(my_argv[argv_index], "\0", 1);
-   bzero(ret, 100);
-   argv_index++;
-  }
-  else strncat(ret, foo, 1);
-  foo++;
- }
-
- my_argv[argv_index] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
- strncpy(my_argv[argv_index], ret, strlen(ret));
- strncat(my_argv[argv_index], "\0", 1);
 }
 
 
@@ -192,6 +154,7 @@ void call_execvp_background_process(int d) {
  else printf("process_id of background process %d \n", child_pid);
 }
 
+
 // main
 int main(int argc, char *argv[]) {
  char c;
@@ -236,15 +199,23 @@ int main(int argc, char *argv[]) {
    else {
     // split tmp into arguments and store them in my_argv
     if (!ran_once || !(tmp[0] == '!' && tmp[1] == '!')) {
-     fill_argv(tmp);
+     // copy tmp to cmd
+     strncpy(cmd, tmp, 100);
+
+     // tokenize cmd and store the index in my_argv
+     int i = 0;
+     my_argv[i] = strtok(cmd, " ");
+     while (my_argv[i] != NULL) {
+      i++;
+      my_argv[i] = strtok(NULL, " ");
+     }
+
+     // set ran once
      ran_once = 1;
     }
-    // copy the first argv into cmd and print it
-    strncpy(cmd, my_argv[0], strlen(my_argv[0]));
-    strncat(cmd, "\0", 1);
 
     // iterates through the argv and compares them to ouputredirect '<<' set t = 1 if found
-    for (d = 0; d <= argv_index; d++) {
+    for (d = 0; my_argv[d] != NULL; d++) {
      if(strcmp(my_argv[d], outputredirect) == 0) {
       t = 1;
       break;
@@ -277,7 +248,6 @@ int main(int argc, char *argv[]) {
 
     // clear my_argv[], reprint shell prompt, clear cmd
     printf("shell> ");
-    bzero(cmd, 100);
    }
    // clear tmp
    bzero(tmp, 100);
@@ -285,7 +255,6 @@ int main(int argc, char *argv[]) {
   // default case: concat c to tmp
   else strncat(tmp, &c, 1);
  }
- free(tmp);
  printf("\n");
  return 0;
 }
