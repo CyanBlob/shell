@@ -14,6 +14,8 @@ In order to use output redirection, follow this format: "[command] > [file to ou
 In order to use piping, follow this format: "[command to pipe from] | [command to pipe to]"
 
 In order to use SuperBash utility, use the command "./SuperBash"
+Sample input for SuperBash is included in file "in.sh"
+To use "in.sh" as input for SuperBash use this format: "./SuperBash < in.sh"
 
 In order to start a background job, add a `&` at the end of your command. The output is stored in background.log
 
