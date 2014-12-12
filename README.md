@@ -5,6 +5,8 @@ Group 16: George Davis, Shashi Dongur, Gary Johnson, Andrew Thomas
 Git repository for CSCE3600 group 16
 http://github.com/CyanBlob/shell
 ==============
+In order to begin using the shell use the command: "YSH"
+
 The `echo` issue has been resolved, and should work normally on (hopefully) all machines.
 
 In order to use input redirection, follow this format: "[command] < [file to input from]"
