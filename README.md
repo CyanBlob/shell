@@ -1,8 +1,10 @@
-CSCE3600
-========
+CSCE3600 Shell
+==============
+Group 16: George Davis, Shashi Dongur, Gary Johnson, Andrew Thomas
 
 Git repository for CSCE3600 group 16
-========
+http://github.com/CyanBlob/shell
+==============
 The `echo` issue has been resolved, and should work normally on (hopefully) all machines.
 
 In order to use input redirection, follow this format: "[command] < [file to input from]"
@@ -11,7 +13,7 @@ In order to use output redirection, follow this format: "[command] > [file to ou
 
 In order to use piping, follow this format: "[command to pipe from] | [command to pipe to]"
 
-In order to use SuperBash, use the command "./SuperBash"
+In order to use SuperBash utility, use the command "./SuperBash"
 
 In order to start a background job, add a `&` at the end of your command. The output is stored in background.log
 
